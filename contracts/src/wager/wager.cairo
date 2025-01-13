@@ -1,6 +1,6 @@
 #[starknet::contract]
 pub mod StrkWager {
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    // use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
     use contracts::wager::interface::IStrkWager;
 

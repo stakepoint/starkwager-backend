@@ -27,6 +27,7 @@ pub mod Escrow {
     impl EscrowImpl of IEscrow<ContractState> {
         fn deposit_to_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {
             let strk_dispatcher = self.strk_dispatcher.read();
+
             // transfers funds to escrow
             strk_dispatcher.transfer_from(user, get_contract_address(), amount);
             self.user_balance.entry(user).write(amount + self.get_balance(user));
