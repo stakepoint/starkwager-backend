@@ -1,2 +1,2 @@
-pub mod escrow;
+mod escrow;
 mod wager;

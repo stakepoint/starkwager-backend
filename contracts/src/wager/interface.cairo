@@ -1,3 +1,2 @@
 #[starknet::interface]
-pub trait IStrkWager<TContractState> {
-}
+pub trait IStrkWager<TContractState> {}
