@@ -100,3 +100,21 @@ fn test_withdraw_from_wallet_not_enough_balance() {
 
     escrow.withdraw_from_wallet(OWNER(), BOB(), withdrawal_amount);
 }
+
+#[test]
+#[should_panic]
+fn test_amount_must_be_positive() {
+    let (escrow, strk_dispatcher) = deploy_escrow();
+
+    let amount = 0_u256;
+
+    // approve escrow to spend
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.approve(escrow.contract_address, amount);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // deposit to wallet
+    escrow.deposit_to_wallet(OWNER(), amount);
+    assert(escrow.get_balance(OWNER()) > amount, 'amount must be positive');
+}
+
