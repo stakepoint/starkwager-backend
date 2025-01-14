@@ -10,5 +10,4 @@ pub trait IEscrow<TContractState> {
         recipientWallet: ContractAddress,
         amount: u256
     );
-    //fn withdraw_from_wallet(ref self: TContractState, user: ContractAddress, amount: u256);
 }
