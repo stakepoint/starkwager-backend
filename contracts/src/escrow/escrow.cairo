@@ -83,5 +83,7 @@ pub mod Escrow {
         fn get_balance(self: @ContractState, user: ContractAddress) -> u256 {
             self.user_balance.entry(user).read()
         }
+
+        fn withdraw_from_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {}
     }
 }
