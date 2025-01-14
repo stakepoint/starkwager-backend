@@ -56,9 +56,9 @@ pub mod Escrow {
         }
 
         fn withdraw_from_wallet(
-            ref self: ContractState, 
-            user: ContractAddress, 
-            recipientWallet: ContractAddress, 
+            ref self: ContractState,
+            user: ContractAddress,
+            recipientWallet: ContractAddress,
             amount: u256
         ) {
             let strk_dispatcher = self.strk_dispatcher.read();

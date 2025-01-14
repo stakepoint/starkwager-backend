@@ -83,6 +83,7 @@ fn test_withdraw_from_wallet() {
 }
 
 #[test]
+#[should_panic]
 fn test_withdraw_from_wallet_not_enough_balance() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
@@ -97,7 +98,5 @@ fn test_withdraw_from_wallet_not_enough_balance() {
     // deposit to wallet
     escrow.deposit_to_wallet(OWNER(), initial_balance);
 
-    //should panic
     escrow.withdraw_from_wallet(OWNER(), BOB(), withdrawal_amount);
-
 }
