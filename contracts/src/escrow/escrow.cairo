@@ -8,7 +8,6 @@ pub mod Escrow {
 
     use contracts::escrow::interface::IEscrow;
     // use core::zeroable::Zeroable;
-    
 
     #[storage]
     struct Storage {
@@ -44,7 +43,6 @@ pub mod Escrow {
     #[abi(embed_v0)]
     impl EscrowImpl of IEscrow<ContractState> {
         fn deposit_to_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {
-
             // Validate input
             //assert(!user.is_zero(), 'Invalid user address');
             assert(amount > 0, 'Amount must be positive');
@@ -55,7 +53,6 @@ pub mod Escrow {
             strk_dispatcher.transfer_from(user, get_contract_address(), amount);
             self.user_balance.entry(user).write(amount + self.get_balance(user));
             self.emit(DepositEvent { user, amount });
-           
         }
 
         fn withdraw_from_wallet(
@@ -83,7 +80,6 @@ pub mod Escrow {
         fn get_balance(self: @ContractState, user: ContractAddress) -> u256 {
             self.user_balance.entry(user).read()
         }
-
         //fn withdraw_from_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {}
     }
 }

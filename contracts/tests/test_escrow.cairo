@@ -75,7 +75,6 @@ fn test_withdraw_from_wallet() {
     // deposit to wallet
     escrow.deposit_to_wallet(OWNER(), initial_balance);
 
-
     // withdraw from wallet
     escrow.withdraw_from_wallet(OWNER(), BOB(), withdrawal_amount);
 
