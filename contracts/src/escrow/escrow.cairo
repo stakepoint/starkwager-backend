@@ -55,16 +55,11 @@ pub mod Escrow {
             self.emit(DepositEvent { user, amount });
         }
 
-        fn withdraw_from_wallet(
-            ref self: ContractState,
-            user: ContractAddress,
-            recipientWallet: ContractAddress,
-            amount: u256
-        ) {
+        fn withdraw_from_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {
             let strk_dispatcher = self.strk_dispatcher.read();
 
             // Validate recipient address
-            assert(!recipientWallet.is_zero(), 'Invalid recipient address');
+            assert(!user.is_zero(), 'Invalid recipient address');
 
             // checks if user has enough funds
             assert!(self.get_balance(user) >= amount, "Insufficient funds");
@@ -73,8 +68,8 @@ pub mod Escrow {
             self.user_balance.entry(user).write(self.get_balance(user) - amount);
 
             // transfers funds from escrow
-            strk_dispatcher.transfer(recipientWallet, amount);
-            self.emit(WithdrawEvent { user: user, recipient: recipientWallet, amount });
+            strk_dispatcher.transfer(user, amount);
+            self.emit(WithdrawEvent { user: user, recipient: user, amount });
         }
 
         fn get_balance(self: @ContractState, user: ContractAddress) -> u256 {

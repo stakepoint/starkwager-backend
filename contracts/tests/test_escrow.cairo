@@ -76,7 +76,7 @@ fn test_withdraw_from_wallet() {
     escrow.deposit_to_wallet(OWNER(), initial_balance);
 
     // withdraw from wallet
-    escrow.withdraw_from_wallet(OWNER(), BOB(), withdrawal_amount);
+    escrow.withdraw_from_wallet(OWNER(), withdrawal_amount);
 
     let final_balance = escrow.get_balance(OWNER());
     assert(final_balance == initial_balance - withdrawal_amount, 'wrong balance');
@@ -98,7 +98,7 @@ fn test_withdraw_from_wallet_not_enough_balance() {
     // deposit to wallet
     escrow.deposit_to_wallet(OWNER(), initial_balance);
 
-    escrow.withdraw_from_wallet(OWNER(), BOB(), withdrawal_amount);
+    escrow.withdraw_from_wallet(OWNER(), withdrawal_amount);
 }
 
 #[test]
