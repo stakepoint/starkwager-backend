@@ -31,7 +31,6 @@ pub mod Escrow {
     #[derive(Drop, starknet::Event)]
     pub struct WithdrawEvent {
         user: ContractAddress,
-        recipient: ContractAddress,
         amount: u256,
     }
 
@@ -69,7 +68,7 @@ pub mod Escrow {
 
             // transfers funds from escrow
             strk_dispatcher.transfer(user, amount);
-            self.emit(WithdrawEvent { user: user, recipient: user, amount });
+            self.emit(WithdrawEvent { user, amount });
         }
 
         fn get_balance(self: @ContractState, user: ContractAddress) -> u256 {
