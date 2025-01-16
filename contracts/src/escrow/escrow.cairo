@@ -24,13 +24,13 @@ pub mod Escrow {
 
     #[derive(Drop, starknet::Event)]
     pub struct DepositEvent {
-        user: ContractAddress,
+        from: ContractAddress,
         amount: u256,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct WithdrawEvent {
-        user: ContractAddress,
+        to: ContractAddress,
         amount: u256,
     }
 
@@ -41,38 +41,38 @@ pub mod Escrow {
 
     #[abi(embed_v0)]
     impl EscrowImpl of IEscrow<ContractState> {
-        fn deposit_to_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {
+        fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
             // Validate input
-            assert(!user.is_zero(), 'Invalid user address');
+            assert(!from.is_zero(), 'Invalid address');
             assert(amount > 0, 'Amount must be positive');
 
             let strk_dispatcher = self.strk_dispatcher.read();
 
             // transfers funds to escrow
-            strk_dispatcher.transfer_from(user, get_contract_address(), amount);
-            self.user_balance.entry(user).write(amount + self.get_balance(user));
-            self.emit(DepositEvent { user, amount });
+            strk_dispatcher.transfer_from(from, get_contract_address(), amount);
+            self.user_balance.entry(from).write(amount + self.get_balance(from));
+            self.emit(DepositEvent { from, amount });
         }
 
-        fn withdraw_from_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {
+        fn withdraw_from_wallet(ref self: ContractState, to: ContractAddress, amount: u256) {
             let strk_dispatcher = self.strk_dispatcher.read();
 
             // Validate recipient address
-            assert(!user.is_zero(), 'Invalid recipient address');
+            assert(!to.is_zero(), 'Invalid address');
 
-            // checks if user has enough funds
-            assert!(self.get_balance(user) >= amount, "Insufficient funds");
+            // checks if to address has enough funds
+            assert(self.get_balance(to) >= amount, 'Insufficient funds');
 
             // update balance first to prevent reentrancy
-            self.user_balance.entry(user).write(self.get_balance(user) - amount);
+            self.user_balance.entry(to).write(self.get_balance(to) - amount);
 
             // transfers funds from escrow
-            strk_dispatcher.transfer(user, amount);
-            self.emit(WithdrawEvent { user, amount });
+            strk_dispatcher.transfer(to, amount);
+            self.emit(WithdrawEvent { to, amount });
         }
 
-        fn get_balance(self: @ContractState, user: ContractAddress) -> u256 {
-            self.user_balance.entry(user).read()
+        fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
+            self.user_balance.entry(address).read()
         }
     }
 }

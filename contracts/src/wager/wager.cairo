@@ -4,8 +4,10 @@ pub mod StrkWager {
         StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map,
     };
 
+    use starknet::{ContractAddress, get_caller_address};
+
     use contracts::wager::interface::IStrkWager;
-    use contracts::wager::types::{Wager};
+    use contracts::wager::types::{Wager, Category, Mode};
 
     #[storage]
     struct Storage {
@@ -30,7 +32,9 @@ pub mod StrkWager {
         fn withdraw_from_wallet(ref self: ContractState, amount: u256) {}
 
         //TODO
-        fn get_balance(ref self: ContractState) -> u256 {}
+        fn get_balance(ref self: ContractState) -> u256 {
+            0
+        }
 
         //TODO
         fn create_wager(
@@ -39,12 +43,26 @@ pub mod StrkWager {
             title: ByteArray,
             terms: ByteArray,
             stake: u256
-        ) -> u64 {}
+        ) -> u64 {
+            0
+        }
 
         //TODO
         fn join_wager(ref self: ContractState, wager_id: u64) {}
 
         //TODO
-        fn get_wager(ref self: ContractState, wager_id: u64) -> Wager {}
+        fn get_wager(ref self: ContractState, wager_id: u64) -> Wager {
+            Wager {
+                wager_id: 0,
+                category: Category::Sports,
+                title: Default::default(),
+                terms: Default::default(),
+                creator: Default::default(),
+                stake: 0,
+                resolved: false,
+                winner: get_caller_address(),
+                mode: Mode::HeadToHead,
+            }
+        }
     }
 }
