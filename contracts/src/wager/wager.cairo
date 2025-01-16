@@ -32,7 +32,7 @@ pub mod StrkWager {
         fn withdraw_from_wallet(ref self: ContractState, amount: u256) {}
 
         //TODO
-        fn get_balance(ref self: ContractState) -> u256 {
+        fn get_balance(self: @ContractState) -> u256 {
             0
         }
 
@@ -51,7 +51,7 @@ pub mod StrkWager {
         fn join_wager(ref self: ContractState, wager_id: u64) {}
 
         //TODO
-        fn get_wager(ref self: ContractState, wager_id: u64) -> Wager {
+        fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
             Wager {
                 wager_id: 0,
                 category: Category::Sports,
@@ -63,6 +63,11 @@ pub mod StrkWager {
                 winner: get_caller_address(),
                 mode: Mode::HeadToHead,
             }
+        }
+
+        //TODO
+        fn get_wager_participants(self: @ContractState, wager_id: u64) -> Span<ContractAddress> {
+            array![].span()
         }
     }
 }
