@@ -7,6 +7,7 @@ pub mod Escrow {
     use starknet::{ContractAddress, get_contract_address};
 
     use contracts::escrow::interface::IEscrow;
+    use core::num::traits::Zero;
 
     #[storage]
     struct Storage {
@@ -16,7 +17,22 @@ pub mod Escrow {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {}
+    enum Event {
+        Deposit: DepositEvent,
+        Withdraw: WithdrawEvent,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct DepositEvent {
+        user: ContractAddress,
+        amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct WithdrawEvent {
+        user: ContractAddress,
+        amount: u256,
+    }
 
     #[constructor]
     fn constructor(ref self: ContractState, strk_dispatcher: IERC20Dispatcher,) {
@@ -26,11 +42,33 @@ pub mod Escrow {
     #[abi(embed_v0)]
     impl EscrowImpl of IEscrow<ContractState> {
         fn deposit_to_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {
+            // Validate input
+            assert(!user.is_zero(), 'Invalid user address');
+            assert(amount > 0, 'Amount must be positive');
+
             let strk_dispatcher = self.strk_dispatcher.read();
 
             // transfers funds to escrow
             strk_dispatcher.transfer_from(user, get_contract_address(), amount);
             self.user_balance.entry(user).write(amount + self.get_balance(user));
+            self.emit(DepositEvent { user, amount });
+        }
+
+        fn withdraw_from_wallet(ref self: ContractState, user: ContractAddress, amount: u256) {
+            let strk_dispatcher = self.strk_dispatcher.read();
+
+            // Validate recipient address
+            assert(!user.is_zero(), 'Invalid recipient address');
+
+            // checks if user has enough funds
+            assert!(self.get_balance(user) >= amount, "Insufficient funds");
+
+            // update balance first to prevent reentrancy
+            self.user_balance.entry(user).write(self.get_balance(user) - amount);
+
+            // transfers funds from escrow
+            strk_dispatcher.transfer(user, amount);
+            self.emit(WithdrawEvent { user, amount });
         }
 
         fn get_balance(self: @ContractState, user: ContractAddress) -> u256 {
