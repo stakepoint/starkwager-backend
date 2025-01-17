@@ -60,6 +60,15 @@ fn test_deposit_to_wallet() {
 }
 
 #[test]
+#[should_panic(expected: ('Invalid address',))]
+fn test_deposit_to_wallet_zero_address() {
+    let (escrow, _) = deploy_escrow();
+
+    // deposit to wallet
+    escrow.deposit_to_wallet(0.try_into().unwrap(), 50_u256);
+}
+
+#[test]
 fn test_withdraw_from_wallet() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
@@ -81,9 +90,17 @@ fn test_withdraw_from_wallet() {
     let final_balance = escrow.get_balance(OWNER());
     assert(final_balance == initial_balance - withdrawal_amount, 'wrong balance');
 }
+#[test]
+#[should_panic(expected: ('Invalid address',))]
+fn test_withdraw_from_wallet_zero_address() {
+    let (escrow, _) = deploy_escrow();
+
+    // withdraw from wallet
+    escrow.withdraw_from_wallet(0.try_into().unwrap(), 500_u256);
+}
 
 #[test]
-#[should_panic]
+#[should_panic(expected: ('Insufficient funds',))]
 fn test_withdraw_from_wallet_not_enough_balance() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
@@ -102,7 +119,7 @@ fn test_withdraw_from_wallet_not_enough_balance() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected: ('Amount must be positive',))]
 fn test_amount_must_be_positive() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
