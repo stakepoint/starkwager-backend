@@ -5,7 +5,7 @@ use contracts::wager::types::{Wager, Category};
 pub trait IStrkWager<TContractState> {
     fn fund_wallet(ref self: TContractState, amount: u256);
     fn withdraw_from_wallet(ref self: TContractState, amount: u256);
-    fn get_balance(self: @TContractState) -> u256;
+    fn get_balance(self: @TContractState, address: ContractAddress) -> u256;
 
     fn create_wager(
         ref self: TContractState,
