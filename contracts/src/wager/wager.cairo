@@ -11,6 +11,7 @@ pub mod StrkWager {
 
     #[storage]
     struct Storage {
+        wager_count: u64,
         wagers: Map<u64, Wager>,
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_count: Map<u64, u64>, // wager_id -> count
@@ -32,7 +33,7 @@ pub mod StrkWager {
         fn withdraw_from_wallet(ref self: ContractState, amount: u256) {}
 
         //TODO
-        fn get_balance(self: @ContractState) -> u256 {
+        fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
             0
         }
 
