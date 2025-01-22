@@ -1,2 +1,5 @@
 target
 .snfoundry_cache/
+
+# OS
+.DS_Store

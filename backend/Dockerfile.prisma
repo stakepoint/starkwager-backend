@@ -1,0 +1,17 @@
+# Use a lightweight Node.js image
+FROM node:18-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Install dependencies including OpenSSL
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Install Prisma globally
+RUN npm install -g prisma
+
+# Expose Prisma Studio's default port
+EXPOSE 5555
+
+# Default command to start Prisma Studio
+CMD ["prisma", "studio"]
