@@ -1,0 +1,89 @@
+graph TB
+    subgraph "Frontend"
+    UI[React UI]
+    MOBILE[Mobile App]
+    end
+
+    subgraph "Backend"
+    API[NestJS API]
+    DB[(Database)]
+    CACHE[(Redis Cache)]
+    INDEXER[Blockchain Indexer]
+    NOTIF[Notification Service]
+    AUTH[Authentication Service]
+    WAGER[Wager Management]
+    INVITE[Invitation System]
+    PAYMENT[Payment Tracking]
+    ANALYTICS[Analytics Engine]
+    end
+
+    subgraph "Blockchain"
+    SC[Smart Contract]
+    BC[Blockchain Node]
+    end
+
+    subgraph "External Services"
+    WC[WalletConnect]
+    EMAIL[Email Service]
+    PUSH[Push Notification Service]
+    KYC[KYC/AML Service]
+    end
+
+    UI --> API
+    MOBILE --> API
+    API --> DB
+    API --> CACHE
+    API --> INDEXER
+    INDEXER --> BC
+    API --> BC
+    BC --> SC
+
+    API --> AUTH
+    AUTH --> WC
+    AUTH --> DB
+
+    API --> WAGER
+    WAGER --> DB
+    WAGER --> SC
+
+    API --> INVITE
+    INVITE --> DB
+    INVITE --> NOTIF
+
+    API --> PAYMENT
+    PAYMENT --> DB
+    PAYMENT --> SC
+    PAYMENT --> CACHE
+
+    API --> NOTIF
+    NOTIF --> EMAIL
+    NOTIF --> PUSH
+    NOTIF --> DB
+
+    API --> ANALYTICS
+    ANALYTICS --> DB
+
+    API --> KYC
+
+    subgraph "User Features"
+    PROFILE[Profile Management]
+    CREATE[Wager Creation]
+    JOIN[Join Wager]
+    TRACK[Wager Tracking]
+    DISPUTE[Dispute Resolution]
+    SOCIAL[Social Features]
+    end
+
+    UI --> PROFILE
+    UI --> CREATE
+    UI --> JOIN
+    UI --> TRACK
+    UI --> DISPUTE
+    UI --> SOCIAL
+
+    PROFILE --> API
+    CREATE --> API
+    JOIN --> API
+    TRACK --> API
+    DISPUTE --> API
+    SOCIAL --> API
