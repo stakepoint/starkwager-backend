@@ -92,8 +92,10 @@ pub mod Escrow {
         }
         fn set_escrow_address(ref self: ContractState, new_address: ContractAddress) {
             assert(!new_address.is_zero(), 'Invalid address');
+
             let old_address = self.escrow_address.read();
             self.escrow_address.write(new_address);
+
             self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
         }
     }
