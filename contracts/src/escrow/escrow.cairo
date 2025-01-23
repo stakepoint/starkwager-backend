@@ -13,6 +13,7 @@ pub mod Escrow {
     struct Storage {
         strk_dispatcher: IERC20Dispatcher,
         user_balance: Map::<ContractAddress, u256>,
+        escrow_address: ContractAddress,
     }
 
     #[event]
@@ -20,6 +21,7 @@ pub mod Escrow {
     enum Event {
         Deposit: DepositEvent,
         Withdraw: WithdrawEvent,
+        EscrowAddressUpdated: EscrowAddressEvent
     }
 
     #[derive(Drop, starknet::Event)]
@@ -32,6 +34,12 @@ pub mod Escrow {
     pub struct WithdrawEvent {
         to: ContractAddress,
         amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct EscrowAddressEvent {
+        old_address: ContractAddress,
+        new_address: ContractAddress,
     }
 
     #[constructor]
@@ -78,5 +86,15 @@ pub mod Escrow {
             self.user_balance.entry(address).read()
         }
         //TODO: stake amount?
+
+        fn get_escrow_address(self: @ContractState) -> ContractAddress {
+            self.escrow_address.read()
+        }
+        fn set_escrow_address(ref self: ContractState, new_address: ContractAddress) {
+            assert(!new_address.is_zero(), 'Invalid address');
+            let old_address = self.escrow_address.read();
+            self.escrow_address.write(new_address);
+            self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
+        }
     }
 }
