@@ -5,7 +5,7 @@ pub mod Escrow {
     use starknet::storage::{
         StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
     };
-    use starknet::{ContractAddress, get_contract_address, get_caller_address};
+    use starknet::{ContractAddress, get_contract_address};
 
     use contracts::escrow::interface::IEscrow;
     use core::num::traits::Zero;
@@ -47,14 +47,10 @@ pub mod Escrow {
     }
 
     #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        strk_dispatcher: IERC20Dispatcher,
-        wager_contract_address: ContractAddress
-    ) {
+    fn constructor(ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress) {
         self.strk_dispatcher.write(strk_dispatcher);
         self.access_control.initializer();
-        self.access_control._grant_role(WAGER_ROLE, wager_contract_address);
+        self.access_control._grant_role(WAGER_ROLE, wager_contract);
     }
 
     #[abi(embed_v0)]

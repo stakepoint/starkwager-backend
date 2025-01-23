@@ -63,8 +63,6 @@ fn test_withdraw_from_wallet() {
 
     let initial_balance = 1000_u256;
     let withdrawal_amount = 500_u256;
-    //let amount = 50_u256;
-
 
     // approve escrow to spend
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
