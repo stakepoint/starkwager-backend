@@ -53,16 +53,23 @@ pub mod StrkWager {
 
         //TODO
         fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
-            Wager {
-                wager_id: 0,
-                category: Category::Sports,
-                title: Default::default(),
-                terms: Default::default(),
-                creator: Default::default(),
-                stake: 0,
-                resolved: false,
-                winner: get_caller_address(),
-                mode: Mode::HeadToHead,
+            // Search the storage for the `wager_id`.
+            match self.storage.wagers.get(wager_id) {
+                Some(wager) => wager, // Returns the details of the bet found.
+                None => {
+                    // If the bet is not found, we return a default Wager.
+                    Wager {
+                        wager_id: 0,
+                        category: Category::Sports, 
+                        title: Default::default(),
+                        terms: Default::default(),
+                        creator: Default::default(), 
+                        stake: 0, 
+                        resolved: false, 
+                        winner: get_caller_address(), 
+                        mode: Mode::HeadToHead,
+                    }
+                }
             }
         }
 
