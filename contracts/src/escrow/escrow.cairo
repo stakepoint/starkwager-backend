@@ -47,10 +47,14 @@ pub mod Escrow {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, strk_dispatcher: IERC20Dispatcher) {
+    fn constructor(
+        ref self: ContractState,
+        strk_dispatcher: IERC20Dispatcher,
+        wager_contract_address: ContractAddress
+    ) {
         self.strk_dispatcher.write(strk_dispatcher);
         self.access_control.initializer();
-        self.access_control._grant_role(WAGER_ROLE, get_caller_address());
+        self.access_control._grant_role(WAGER_ROLE, wager_contract_address);
     }
 
     #[abi(embed_v0)]
@@ -58,11 +62,13 @@ pub mod Escrow {
         fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
             self.access_control.assert_only_role(WAGER_ROLE);
             
+            // Validate input
             assert(!from.is_zero(), 'Invalid address');
             assert(amount > 0, 'Amount must be positive');
 
             let strk_dispatcher = self.strk_dispatcher.read();
 
+            // transfers funds to escrow
             strk_dispatcher.transfer_from(from, get_contract_address(), amount);
             self.user_balance.entry(from).write(amount + self.get_balance(from));
             self.emit(DepositEvent { from, amount });
@@ -73,11 +79,16 @@ pub mod Escrow {
 
             let strk_dispatcher = self.strk_dispatcher.read();
 
+            // Validate recipient address
             assert(!to.is_zero(), 'Invalid address');
+
+            // checks if to address has enough funds
             assert(self.get_balance(to) >= amount, 'Insufficient funds');
 
+            // update balance first to prevent reentrancy
             self.user_balance.entry(to).write(self.get_balance(to) - amount);
 
+            // transfers funds from escrow
             strk_dispatcher.transfer(to, amount);
             self.emit(WithdrawEvent { to, amount });
         }
@@ -85,14 +96,6 @@ pub mod Escrow {
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
             self.access_control.assert_only_role(WAGER_ROLE);
             self.user_balance.entry(address).read()
-        }
-    }
-
-    #[generate_trait]
-    impl InternalFunctions of InternalFunctionsTrait {
-        fn grant_wager_role(ref self: ContractState, address: ContractAddress) {
-            self.access_control.assert_only_role(WAGER_ROLE);
-            self.access_control._grant_role(WAGER_ROLE, address);
         }
     }
 }

@@ -16,6 +16,10 @@ pub fn BOB() -> ContractAddress {
     'bob'.try_into().unwrap()
 }
 
+pub fn MOCK_WAGER() -> ContractAddress {
+    'mock_wager'.try_into().unwrap()
+}
+
 pub fn deploy_mock_erc20() -> IERC20Dispatcher {
     let contract = declare("MyToken").unwrap().contract_class();
     let mut calldata = array![];
@@ -31,9 +35,11 @@ pub fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
     let strk_dispatcher = deploy_mock_erc20();
 
     let mut calldata = array![];
-    strk_dispatcher.serialize(ref calldata);
+    strk_dispatcher.contract_address.serialize(ref calldata);
+    MOCK_WAGER().serialize(ref calldata);
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
 
     (IEscrowDispatcher { contract_address }, strk_dispatcher)
 }
+
