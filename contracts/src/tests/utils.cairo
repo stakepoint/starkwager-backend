@@ -3,8 +3,9 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address,
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
 };
+
 
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 

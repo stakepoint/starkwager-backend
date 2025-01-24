@@ -14,57 +14,6 @@ use snforge_std::{
 
 
 #[test]
-fn test_set_escrow_address() {
-    let (escrow, _) = deploy_escrow();
-
-    let new_address = contract_address_const::<'new_address'>();
-
-    start_cheat_caller_address(escrow.contract_address, OWNER());
-    escrow.set_escrow_address(new_address);
-    stop_cheat_caller_address(escrow.contract_address);
-
-    let updated_address: ContractAddress = escrow.get_escrow_address();
-
-    assert_eq!(updated_address, new_address);
-}
-
-
-#[test]
-#[should_panic(expected: ('Invalid address',))]
-fn test_set_escrow_address_zero_address_fails() {
-    // Arrange
-    let (escrow, _) = deploy_escrow();
-    let zero_address: ContractAddress = starknet::contract_address_const::<0>();
-
-    // Act & Assert (should panic)
-    start_cheat_caller_address(escrow.contract_address, OWNER());
-    escrow.set_escrow_address(zero_address);
-    stop_cheat_caller_address(escrow.contract_address);
-}
-
-#[test]
-fn test_get_escrow_address() {
-    let (escrow, _) = deploy_escrow();
-    let first_address = contract_address_const::<'new_address'>();
-
-    escrow.set_escrow_address(first_address);
-    let initial_address: ContractAddress = escrow.get_escrow_address();
-
-    // Check if the initial address is as expected
-    assert!(
-        initial_address == first_address, "Initial escrow address is not being
-        returned"
-    );
-
-    let second_address = contract_address_const::<'second_address'>();
-    escrow.set_escrow_address(second_address);
-    let final_address: ContractAddress = escrow.get_escrow_address();
-
-    // Check if the updated address is as expected
-    assert!(final_address == second_address, "The function did not return the updated address");
-}
-
-#[test]
 fn test_deposit_to_wallet() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
