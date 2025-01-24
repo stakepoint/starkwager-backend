@@ -1,11 +1,9 @@
 use starknet::ContractAddress;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
     stop_cheat_caller_address,
 };
-
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 
 pub fn OWNER() -> ContractAddress {
@@ -42,4 +40,3 @@ pub fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
 
     (IEscrowDispatcher { contract_address }, strk_dispatcher)
 }
-

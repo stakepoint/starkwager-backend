@@ -21,7 +21,7 @@ pub mod Escrow {
         strk_dispatcher: IERC20Dispatcher,
         user_balance: Map::<ContractAddress, u256>,
         #[substorage(v0)]
-        access_control: AccessControlComponent::Storage
+        access_control: AccessControlComponent::Storage,
     }
 
     #[event]
@@ -30,7 +30,7 @@ pub mod Escrow {
         Deposit: DepositEvent,
         Withdraw: WithdrawEvent,
         #[flat]
-        AccessControlEvent: AccessControlComponent::Event
+        AccessControlEvent: AccessControlComponent::Event,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -49,7 +49,7 @@ pub mod Escrow {
     fn constructor(
         ref self: ContractState,
         strk_dispatcher: IERC20Dispatcher,
-        wager_contract: ContractAddress
+        wager_contract: ContractAddress,
     ) {
         self.strk_dispatcher.write(strk_dispatcher);
         self.access_control.initializer();
@@ -60,14 +60,14 @@ pub mod Escrow {
     impl EscrowImpl of IEscrow<ContractState> {
         fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
             self.access_control.assert_only_role(WAGER_ROLE);
-            
+
             // Validate input
             assert(!from.is_zero(), 'Invalid address');
             assert(amount > 0, 'Amount must be positive');
 
             let strk_dispatcher = self.strk_dispatcher.read();
 
-            // transfers funds to escrow
+            // Transfer funds to escrow
             strk_dispatcher.transfer_from(from, get_contract_address(), amount);
             self.user_balance.entry(from).write(amount + self.get_balance(from));
             self.emit(DepositEvent { from, amount });
@@ -81,13 +81,13 @@ pub mod Escrow {
             // Validate recipient address
             assert(!to.is_zero(), 'Invalid address');
 
-            // checks if to address has enough funds
+            // Check if the recipient has enough funds
             assert(self.get_balance(to) >= amount, 'Insufficient funds');
 
-            // update balance first to prevent reentrancy
+            // Update balance first to prevent reentrancy
             self.user_balance.entry(to).write(self.get_balance(to) - amount);
 
-            // transfers funds from escrow
+            // Transfer funds from escrow
             strk_dispatcher.transfer(to, amount);
             self.emit(WithdrawEvent { to, amount });
         }

@@ -1,12 +1,8 @@
 use starknet::ContractAddress;
-
 use starknet::testing::set_caller_address;
-
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 use contracts::tests::utils::{deploy_mock_erc20, OWNER, BOB};
-
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
     stop_cheat_caller_address,
@@ -17,8 +13,10 @@ fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
     let mock_wager_address = contract_address_const::<0x123>();
 
     let escrow = declare('Escrow');
-    let escrow_address = escrow.deploy(@array![mock_erc20.contract_address.into(), mock_wager_address.into()]).unwrap();
-    
+    let escrow_address = escrow
+        .deploy(@array![mock_erc20.contract_address.into(), mock_wager_address.into()])
+        .unwrap();
+
     (IEscrowDispatcher { contract_address: escrow_address }, mock_erc20)
 }
 
@@ -47,12 +45,12 @@ fn test_deposit_to_wallet() {
 }
 
 #[test]
-#[should_panic(expected: ('Invalid address',))]
+#[should_panic(expected = "Invalid address")]
 fn test_deposit_to_wallet_zero_address() {
     let (escrow, _) = deploy_escrow();
     set_wager_caller(escrow.contract_address);
 
-    // deposit to wallet
+    // deposit to wallet with zero address
     escrow.deposit_to_wallet(0.try_into().unwrap(), 50_u256);
 }
 
@@ -80,17 +78,17 @@ fn test_withdraw_from_wallet() {
 }
 
 #[test]
-#[should_panic(expected: ('Invalid address',))]
+#[should_panic(expected = "Invalid address")]
 fn test_withdraw_from_wallet_zero_address() {
     let (escrow, _) = deploy_escrow();
     set_wager_caller(escrow.contract_address);
 
-    // withdraw from wallet
+    // withdraw from wallet with zero address
     escrow.withdraw_from_wallet(0.try_into().unwrap(), 500_u256);
 }
 
 #[test]
-#[should_panic(expected: ('Insufficient funds',))]
+#[should_panic(expected = "Insufficient funds")]
 fn test_withdraw_from_wallet_not_enough_balance() {
     let (escrow, strk_dispatcher) = deploy_escrow();
     set_wager_caller(escrow.contract_address);
@@ -106,11 +104,12 @@ fn test_withdraw_from_wallet_not_enough_balance() {
     // deposit to wallet
     escrow.deposit_to_wallet(OWNER(), initial_balance);
 
+    // try to withdraw more than available balance
     escrow.withdraw_from_wallet(OWNER(), withdrawal_amount);
 }
 
 #[test]
-#[should_panic(expected: ('Amount must be positive',))]
+#[should_panic(expected = "Amount must be positive")]
 fn test_amount_must_be_positive() {
     let (escrow, strk_dispatcher) = deploy_escrow();
     set_wager_caller(escrow.contract_address);
@@ -122,17 +121,16 @@ fn test_amount_must_be_positive() {
     strk_dispatcher.approve(escrow.contract_address, amount);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // deposit to wallet
+    // deposit to wallet with zero amount
     escrow.deposit_to_wallet(OWNER(), amount);
     assert(escrow.get_balance(OWNER()) > amount, 'amount must be positive');
 }
 
 #[test]
-#[should_panic(expected: ('Caller is missing role',))]
+#[should_panic(expected = "Caller is missing role")]
 fn test_unauthorized_access() {
     let (escrow, _) = deploy_escrow();
-    
+
     // Try to call deposit_to_wallet without setting wager caller
     escrow.deposit_to_wallet(OWNER(), 50_u256);
 }
-
