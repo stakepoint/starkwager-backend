@@ -39,4 +39,16 @@ pub fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
 
     (IEscrowDispatcher { contract_address }, strk_dispatcher)
+
+fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
+    let mock_erc20 = deploy_mock_erc20();
+    let mock_wager_address = contract_address_const::<0x123>();
+
+    let escrow = declare('Escrow');
+    let escrow_address = escrow
+        .deploy(@array![mock_erc20.contract_address.into(), mock_wager_address.into()])
+        .unwrap();
+
+    (IEscrowDispatcher { contract_address: escrow_address }, mock_erc20)
+}
 }

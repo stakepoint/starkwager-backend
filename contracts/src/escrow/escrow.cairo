@@ -14,8 +14,7 @@ pub mod Escrow {
     component!(path: AccessControlComponent, storage: access_control, event: AccessControlEvent);
 
     #[abi(embed_v0)]
-    impl AccessControlImpl = 
-        AccessControlComponent::AccessControlImpl<ContractState>;
+    impl AccessControlImpl = AccessControlComponent::AccessControlImpl<ContractState>;
 
     #[storage]
     struct Storage {
