@@ -14,7 +14,8 @@ pub mod Escrow {
     component!(path: AccessControlComponent, storage: access_control, event: AccessControlEvent);
 
     #[abi(embed_v0)]
-    impl AccessControlImpl = AccessControlComponent::AccessControlImpl<ContractState>;
+    impl AccessControlImpl = 
+        AccessControlComponent::AccessControlImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -47,9 +48,7 @@ pub mod Escrow {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState,
-        strk_dispatcher: IERC20Dispatcher,
-        wager_contract: ContractAddress,
+        ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress,
     ) {
         self.strk_dispatcher.write(strk_dispatcher);
         self.access_control.initializer();
