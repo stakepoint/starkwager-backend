@@ -1,6 +1,8 @@
 use starknet::ContractAddress;
 use starknet::{testing, contract_address_const};
 
+use contracts::wager::wager::StrkWager;
+
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::tests::utils::{deploy_wager};
 
@@ -11,11 +13,30 @@ use snforge_std::{
 
 #[test]
 fn test_set_escrow_address() {
-    let (wager, _) = deploy_wager();
+    let (wager, contract_address) = deploy_wager();
+    let mut spy = spy_events();
 
     let new_address = contract_address_const::<'new_address'>();
 
     wager.set_escrow_address(new_address);
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    StrkWager::Event::EscrowAddressUpdated(
+                        StrkWager::EscrowAddressEvent {
+                            old_address: contract_address_const::<
+                                0
+                            >(), // Assuming initial address is zero
+                            new_address: new_address
+                            // contract_address, Event::EscrowAddressUpdated(EscrowAddressEvent{
+                        // old_address: contract_address_const::<0>(), new_address: new_address
+                        }
+                    )
+                )
+            ]
+        );
 
     let updated_address: ContractAddress = wager.get_escrow_address();
 

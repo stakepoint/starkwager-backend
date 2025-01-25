@@ -27,8 +27,8 @@ pub mod StrkWager {
 
     #[derive(Drop, starknet::Event)]
     pub struct EscrowAddressEvent {
-        old_address: ContractAddress,
-        new_address: ContractAddress,
+        pub old_address: ContractAddress,
+        pub new_address: ContractAddress,
     }
 
     #[constructor]
