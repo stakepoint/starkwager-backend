@@ -6,8 +6,8 @@ use snforge_std::{
     stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
 };
 
-
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
+use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 
 pub fn OWNER() -> ContractAddress {
     'owner'.try_into().unwrap()
@@ -37,4 +37,15 @@ pub fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
 
     (IEscrowDispatcher { contract_address }, strk_dispatcher)
+}
+
+pub fn deploy_wager() -> (IStrkWagerDispatcher, ContractAddress) {
+    let contract = declare("StrkWager").unwrap().contract_class();
+    let calldata = array![];
+
+    let (contract_address, _) = contract.deploy(@calldata).unwrap();
+
+    let dispatcher = IStrkWagerDispatcher { contract_address };
+
+    (dispatcher, contract_address)
 }
