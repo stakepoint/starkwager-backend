@@ -39,8 +39,8 @@ pub mod StrkWager {
 
         //TODO
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
-                let escrow_dispatcher = self.escrow_dispatcher.read();
-                escrow_dispatcher.get_balance(address)
+            let escrow_dispatcher = self.escrow_dispatcher.read();
+            escrow_dispatcher.get_balance(address)
         }
 
         //TODO
