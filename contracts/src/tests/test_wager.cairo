@@ -20,16 +20,21 @@ fn test_set_escrow_address() {
 
     wager.set_escrow_address(new_address);
     spy
-    .assert_emitted(
-        @array![
-            (
-                contract_address,
-                StrkWager::Event::EscrowAddressUpdated(StrkWager::EscrowAddressEvent {
-                    old_address: contract_address_const::<0>(), // Assuming initial address is zero
-                    new_address: new_address
-                }))
-        ]
-    );
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    StrkWager::Event::EscrowAddressUpdated(
+                        StrkWager::EscrowAddressEvent {
+                            old_address: contract_address_const::<
+                                0
+                            >(), // Assuming initial address is zero
+                            new_address: new_address
+                        }
+                    )
+                )
+            ]
+        );
 
     let updated_address: ContractAddress = wager.get_escrow_address();
 
