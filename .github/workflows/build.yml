@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - staging
   pull_request:
 permissions: read-all
 
