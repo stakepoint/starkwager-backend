@@ -15,6 +15,3 @@ EXPOSE 5555
 
 # Default command to start Prisma Studio
 CMD ["prisma", "studio"]
-
-
-

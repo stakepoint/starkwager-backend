@@ -14,12 +14,14 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String?  @unique
-  username   String?  @unique
-  address    String   @unique
-  picture    String?
-  isVerified Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id         String   @id @default(uuid()) // UUID as the unique identifier
+  address    String   // Required field
+  username   String?  // Optional field
+  email      String?  // Optional field
+  picture    String?  // Optional field
+  isVerified Boolean  @default(false) // Boolean with a default value of `false`
+  updatedAt  DateTime @updatedAt // Auto-updates timestamp when the record is modified
+  createdAt  DateTime @default(now()) // Auto-populates timestamp when the record is created
+
+  @@map("users")
 }

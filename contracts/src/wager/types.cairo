@@ -13,17 +13,15 @@ pub struct Wager {
     pub mode: Mode,
 }
 
-#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
+#[derive(Drop, Copy, Serde, PartialEq, starknet::Store)]
 pub enum Category {
-    #[default]
     Sports,
     Politics,
     Entertainment,
 }
 
-#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
+#[derive(Drop, Copy, Serde, PartialEq, starknet::Store)]
 pub enum Mode {
-    #[default]
     HeadToHead,
     Group
 }
