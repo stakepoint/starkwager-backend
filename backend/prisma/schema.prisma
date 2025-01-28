@@ -14,7 +14,12 @@ datasource db {
 }
 
 model User {
-  id    Int     @default(autoincrement()) @id
-  email String  @unique
-  name  String?
+  id         String   @id @default(uuid())
+  email      String?  @unique
+  username   String?  @unique
+  address    String   @unique
+  picture    String?
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
