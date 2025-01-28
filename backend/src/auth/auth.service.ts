@@ -35,7 +35,8 @@ export class AuthService {
   }
 
   // TODO: Implement signature validation
-  private isValidSignature(): boolean {
+  private isValidSignature(address: string, signature: string[]): boolean {
+    //Implement signature validation here
     return true; // Placeholder
   }
 }
