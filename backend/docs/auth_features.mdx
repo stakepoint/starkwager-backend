@@ -1,0 +1,114 @@
+### **Feature Checklist for User Registration and Login with Stateless JWT**
+
+---
+
+### **1. User Registration (WalletConnect)**  
+- **Create `POST /auth/register` Endpoint**  
+    - [ ] Endpoint for user registration via WalletConnect (wallet signature).
+    - [ ] Validate the **wallet address** and **signed nonce**.
+    - [ ] Use the signature verification process described in [this guide](https://dev.to/bastienfaivre/a-guide-on-starknet-signatures-a3m).
+    - [ ] **Nonce Validation**: Ensure nonce is used for replay protection.
+    - [ ] If the **address** exists in the DB, return an error (`"User already registered"`).
+    - [ ] If the address is new, **save the user** (`address`, `createdAt`, `updatedAt`).
+    - [ ] **Generate JWTs**:
+        - **Access Token** (short-lived e.g., 15 min).
+        - **Refresh Token** (stateless, no server-side storage).
+        - **Return both tokens** in the response.
+  
+---
+
+### **2. User Login (WalletConnect)**  
+- **Create `POST /auth/login` Endpoint**  
+    - [ ] Endpoint for user login via WalletConnect (wallet signature).
+    - [ ] Validate the **wallet address** and **signature**.
+    - [ ] Use the signature verification process as described in [this guide](https://dev.to/bastienfaivre/a-guide-on-starknet-signatures-a3m).
+    - [ ] **Check if the address exists** in the DB.
+        - If not, return an error (`"User not registered"`).
+    - [ ] **Generate JWT**:
+        - **Access Token** (signed with `userId`, `address`, `exp`, `iat`).
+    - [ ] **Return the access token** to the client.
+
+---
+
+### **3. JWT Implementation (Stateless)**  
+#### **Access Token**  
+- [ ] **Create and sign stateless `accessToken`**.
+    - Short-lived (e.g., 15 minutes).
+    - Include claims:
+      - `userId`: User identifier.
+      - `address`: Wallet address.
+      - `iat`: Issued at timestamp.
+      - `exp`: Expiration timestamp.
+    - **Do not store the token** on the server side.
+  
+#### **JWT Signing**  
+- [ ] Use a **secure key** (e.g., RSA or HMAC) to sign the JWT.
+- [ ] Store the **signing key** securely, never hardcoded.
+  
+---
+
+### **4. Database Schema Updates**
+
+#### **User Table**  
+| **Field**      | **Type**     | **Description**                  | **Constraints**            |
+|----------------|-------------|----------------------------------|----------------------------|
+| `id`           | UUID        | Unique user identifier           | Auto-generated             |
+| `address`      | String      | Wallet address                   | Unique, indexed            |
+| `username`     | String      | Optional username                | Max 30 characters (nullable)|
+| `createdAt`    | Timestamp   | Timestamp when the user registered| Auto-generated             |
+| `updatedAt`    | Timestamp   | Last update timestamp            | Auto-updated               |
+
+---
+
+### **5. Middleware and Validation**
+
+1. **JWT Validation Middleware**  
+    - [ ] Create middleware to validate JWT in the request header for protected routes.
+    - [ ] Decode the token and verify the signature using the same key.
+    - [ ] Ensure token is **not expired**.
+
+2. **Nonce Validation (During Registration)**  
+    - [ ] Ensure a unique **nonce** is used during registration.
+    - [ ] Store and expire nonce after use (to prevent replay attacks).
+
+---
+
+### **6. Error Handling**  
+- [ ] **Handle invalid or missing wallet signatures**:
+    - Invalid signature in registration/login.
+    - Expired or malformed JWT token.
+- [ ] **Return appropriate error messages** for:
+    - **Invalid nonce**.
+    - **Duplicate wallet address**.
+    - **Invalid address or signature**.
+    - **Token expiration**.
+
+---
+
+### **7. Testing Tasks**  
+- [ ] **Write unit tests for `POST /auth/register`**:
+    - Test wallet address validation.
+    - Validate nonce usage and signature verification.
+    - Check for JWT generation (access token and refresh token).
+  
+- [ ] **Write unit tests for `POST /auth/login`**:
+    - Test signature verification.
+    - Check for proper JWT generation.
+  
+- [ ] **Write tests for middleware**:
+    - Test token validation, expiration, and errors.
+  
+- [ ] **Write integration tests**:
+    - Ensure end-to-end flow from registration/login to token validation.
+
+---
+
+### **8. Documentation and API Spec**  
+- [ ] **Update API documentation** for registration/login endpoints, including JWT structure.
+    - Include details for **signature verification** as per the blog reference.
+- [ ] **Error Codes Documentation**:
+    - Include specific error messages for invalid signatures, token expiration, etc.
+
+---
+
+This checklist is **PR-ready** and outlines all the actions for **registration** and **login** using **stateless JWTs** and **signature verification**. Let me know if you need further adjustments!
