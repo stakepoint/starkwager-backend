@@ -26,7 +26,6 @@ export class AuthService {
       };
     }
 
-    // If the user doesn't exist, create a new user
     const newUser = await this.usersService.create(createUserDto);
 
     return {
@@ -37,8 +36,6 @@ export class AuthService {
 
   // TODO: Implement signature validation
   private isValidSignature(): boolean {
-    // Add your signature validation logic here
-    // Example: Validate the signature against the address
     return true; // Placeholder
   }
 }
