@@ -1,26 +1,41 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { UsersService } from 'src/users/users.service';
+import { CreateUserDto } from 'src/users/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(private readonly usersService: UsersService) {}
+
+  async createOrLogin(createUserDto: CreateUserDto) {
+    const { address } = createUserDto;
+
+    // TODO: Add signature validation here
+    // Example: Validate the user's signature using their address
+    // if (!this.isValidSignature(address, signature)) {
+    //   throw new BadRequestException('Invalid signature');
+    // }
+
+    // Check if the user already exists
+    const existingUser = await this.usersService.findOneByAddress(address);
+
+    if (existingUser) {
+      // TODO: Implement login logic here JWT etc.
+      return {
+        message: 'User logged in successfully',
+        user: existingUser,
+      };
+    }
+
+    const newUser = await this.usersService.create(createUserDto);
+
+    return {
+      message: 'User created successfully',
+      user: newUser,
+    };
   }
 
-  findAll() {
-    return `This action returns all auth`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  // TODO: Implement signature validation
+  private isValidSignature(): boolean {
+    return true; // Placeholder
   }
 }

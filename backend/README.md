@@ -50,6 +50,48 @@ cd backend
 
 Create a `.env` file in the root directory based on the `.env.example` provided. Update the empty fields:
 
+```env
+# GENERAL CONFIG
+NODE_ENV=development
+SERVER_PORT=8080
+
+# JWT CONFIG
+JWT_SECRET=
+REFRESH_TOKEN_SECRET=
+
+# REDIS CONFIG
+REDIS_HOST=
+REDIS_PORT=
+REDIS_PASSWORD=
+REDIS_USERNAME=
+
+# OTP CONFIG
+OTP_SECRET=
+
+# SENDGRID CONFIG
+SEND_GRID_HOST=
+SENDGRID_API_KEY=
+SEND_GRID_MAIL_FROM=
+SEND_GRID_PSD=
+SEND_GRID_USERNAME=
+
+# POSTGRES DB CONFIG
+POSTGRES_USER=postgres     ## DATABASE USERNAME
+POSTGRES_PASSWORD=strongpassword   ## DATABASE PASSWORD
+POSTGRES_DB_NAME=starkwager-backend_db  ## DATABASE NAME / DOCKER CONTAINER NAME
+POSTGRES_DB_SCHEMA=wager    ## POSTGRES SCHEMA NAME
+
+## Use this when running on docker container.
+POSTGRES_DB_HOST=${POSTGRES_DB_NAME}
+
+## Use this when running locally.
+# POSTGRES_DB_HOST=localhost  ## POSTGRES HOST WITHOUT DOCKER ##NB To run migration when model change you can uncomment this so prisma can see your postgress on localhost.
+
+POSTGRES_DB_PORT=5432       ## DEFAULT POSTGRES PORT
+
+# PRISMA POSTGRES DATABASE CONNECTION
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_DB_HOST}:${POSTGRES_DB_PORT}/${POSTGRES_DB_NAME}?schema=${POSTGRES_DB_SCHEMA}&sslmode=prefer
+```
 
 ### 4. Run the Project
 
@@ -99,6 +141,22 @@ pnpm docker:down:all
 
 ---
 
+## Migrations
+
+To apply database migrations when running in Docker:
+
+1. Ensure your Docker containers are up and running using `pnpm docker:dev`.
+2. Open another terminal and navigate to the `backend` folder.
+3. Run the following command to apply migrations:
+
+```bash
+pnpm migrate:dev
+```
+
+Once the migration is successful, restart your Docker containers for the changes to take effect.
+
+---
+
 ## API Documentation
 
 The API documentation is available via Swagger after starting the server. Visit:
@@ -116,4 +174,3 @@ We welcome contributions to improve the StarkWager backend. Please follow the [C
 ## 📃 License
 
 This project is licensed under the MIT License.
-
