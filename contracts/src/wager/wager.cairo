@@ -59,7 +59,7 @@ pub mod StrkWager {
 
         //TODO
         fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
-             // search the storage for the `wager_id`.
+            // search the storage for the `wager_id`.
             self.wagers.entry(wager_id).read()
         }
 
