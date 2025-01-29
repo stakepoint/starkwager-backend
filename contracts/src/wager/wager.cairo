@@ -17,7 +17,7 @@ pub mod StrkWager {
         wagers: Map<u64, Wager>,
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_count: Map<u64, u64>, // wager_id -> count
-        escrow_dispatcher: IEscrowDispatcher,
+        escrow_address: ContractAddress,
     }
 
     #[event]
@@ -25,9 +25,7 @@ pub mod StrkWager {
     pub enum Event {}
 
     #[constructor]
-    fn constructor(ref self: ContractState, escrow_dispatcher: IEscrowDispatcher) {
-        self.escrow_dispatcher.write(escrow_dispatcher)
-    }
+    fn constructor(ref self: ContractState) {}
 
     #[abi(embed_v0)]
     impl StrkWagerImpl of IStrkWager<ContractState> {
@@ -37,9 +35,10 @@ pub mod StrkWager {
         //TODO
         fn withdraw_from_wallet(ref self: ContractState, amount: u256) {}
 
-        //TODO
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
-            let escrow_dispatcher = self.escrow_dispatcher.read();
+            let escrow_dispatcher = IEscrowDispatcher {
+                contract_address: self.escrow_address.read()
+            };
             escrow_dispatcher.get_balance(address)
         }
 
