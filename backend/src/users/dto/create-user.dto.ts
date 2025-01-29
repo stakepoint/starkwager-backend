@@ -1,4 +1,6 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, IsEmail } from 'class-validator';
+import { WeierstrassSignatureType } from 'starknet';
 
 export class CreateUserDto {
   @IsString()
@@ -19,5 +21,9 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsString()
-  signature?: string;
+  signature?: WeierstrassSignatureType;
+
+  @IsOptional()
+  @IsString()
+  signedData?: string;
 }
