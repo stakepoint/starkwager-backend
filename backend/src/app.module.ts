@@ -6,7 +6,7 @@ import { PrismaModule, loggingMiddleware } from 'nestjs-prisma';
 
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
-import { AppConfig, DatabaseConfig } from './config';
+import { AppConfig } from './config';
 
 import { AllExceptionsFilter } from './common/exceptions/all-exception.filter';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
@@ -18,7 +18,7 @@ import { APP_FILTER, APP_PIPE } from '@nestjs/core';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [AppConfig, DatabaseConfig],
+      load: [AppConfig],
     }),
     PrismaModule.forRoot({
       isGlobal: true,

@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsOptional, IsString, IsEmail } from 'class-validator';
+import { TypedData, WeierstrassSignatureType } from 'starknet';
 
 export class CreateUserDto {
   @IsString()
@@ -19,5 +20,9 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsString()
-  signature?: string;
+  signature?: WeierstrassSignatureType;
+
+  @IsOptional()
+  @IsString()
+  signedData?: TypedData;
 }
