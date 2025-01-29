@@ -5,6 +5,7 @@ pub mod StrkWager {
     };
 
     use starknet::{ContractAddress, get_caller_address};
+    use core::num::traits::Zero;
 
     use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 
@@ -22,7 +23,15 @@ pub mod StrkWager {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    pub enum Event {}
+    pub enum Event {
+        EscrowAddressUpdated: EscrowAddressEvent,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct EscrowAddressEvent {
+        pub old_address: ContractAddress,
+        pub new_address: ContractAddress,
+    }
 
     #[constructor]
     fn constructor(ref self: ContractState) {}
@@ -65,6 +74,18 @@ pub mod StrkWager {
         //TODO
         fn get_wager_participants(self: @ContractState, wager_id: u64) -> Span<ContractAddress> {
             array![].span()
+        }
+
+        fn get_escrow_address(self: @ContractState) -> ContractAddress {
+            self.escrow_address.read()
+        }
+        fn set_escrow_address(ref self: ContractState, new_address: ContractAddress) {
+            assert(!new_address.is_zero(), 'Invalid address');
+
+            let old_address = self.escrow_address.read();
+            self.escrow_address.write(new_address);
+
+            self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
         }
     }
 }
