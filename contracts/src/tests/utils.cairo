@@ -41,10 +41,9 @@ pub fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
 
 pub fn deploy_wager() -> (IStrkWagerDispatcher, ContractAddress) {
     let contract = declare("StrkWager").unwrap().contract_class();
-    let calldata = array![];
+    let mut calldata = array![];
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
-
     let dispatcher = IStrkWagerDispatcher { contract_address };
 
     (dispatcher, contract_address)

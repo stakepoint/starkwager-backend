@@ -19,7 +19,6 @@ pub mod StrkWager {
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
-        escrow_dispatcher: IEscrowDispatcher,
     }
 
     #[event]
