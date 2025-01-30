@@ -11,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigType } from '@nestjs/config';
 
 import { AppConfig } from '../config';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -79,9 +80,13 @@ export class AuthService {
     }
   }
 
-  private async signJwt(payload: CreateUserDto) {
+  private async signJwt(payload: User) {
     const { address } = payload;
-    const accessToken = await this.jwtService.signAsync({ address });
+    const accessToken = await this.jwtService.signAsync({
+      address,
+      sub: payload.id,
+      role: payload.role,
+    });
 
     const refreshToken = await this.jwtService.signAsync(
       {
