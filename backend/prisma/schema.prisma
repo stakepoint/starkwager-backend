@@ -20,6 +20,13 @@ model User {
   address    String   @unique
   picture    String?
   isVerified Boolean  @default(false)
+  roles       Role     @default(User) // Set default role to 'User'
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
+
+enum Role {
+  User
+  Admin
+}
+
