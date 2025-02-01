@@ -6,10 +6,10 @@ pub struct Wager {
     pub category: Category,
     pub title: ByteArray,
     pub terms: ByteArray,
-    pub creator: ByteArray,
+    pub creator: ContractAddress,
     pub stake: u256,
     pub resolved: bool,
-    pub winner: ContractAddress,
+    pub winner: Option<ContractAddress>,
     pub mode: Mode,
 }
 
