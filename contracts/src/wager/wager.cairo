@@ -34,7 +34,18 @@ pub mod StrkWager {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState) {}
+    fn constructor(ref self: ContractState) {
+        let caller = get_caller_address();
+        
+        let escrow_address = self.escrow_address.read();
+        assert(!escrow_address.is_zero(), 'Escrow not configured');
+        
+        let escrow_dispatcher = IEscrowDispatcher {
+            contract_address: escrow_address
+        };
+        
+        escrow_dispatcher.deposit_to_wallet(caller, amount);
+    }
 
     #[abi(embed_v0)]
     impl StrkWagerImpl of IStrkWager<ContractState> {
