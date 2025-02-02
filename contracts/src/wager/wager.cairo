@@ -86,7 +86,7 @@ pub mod StrkWager {
                 creator,
                 stake,
                 resolved: false,
-                winner: Option::None,
+                winner: contract_address_const::<0>(),
                 mode
             };
 

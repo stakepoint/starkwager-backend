@@ -9,7 +9,7 @@ pub struct Wager {
     pub creator: ContractAddress,
     pub stake: u256,
     pub resolved: bool,
-    pub winner: Option<ContractAddress>,
+    pub winner: ContractAddress,
     pub mode: Mode,
 }
 

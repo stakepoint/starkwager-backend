@@ -2,16 +2,15 @@ use starknet::ContractAddress;
 use starknet::{testing, contract_address_const};
 
 use contracts::wager::wager::StrkWager;
-use contracts::wager::types::{Mode, Category};
 
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
-use contracts::tests::utils::{deploy_wager, OWNER, deploy_escrow};
+use contracts::tests::utils::{deploy_wager, create_wager};
 use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, cheat_caller_address, CheatSpan
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
 };
 
 #[test]
@@ -81,34 +80,4 @@ fn test_create_wager_success() {
 #[should_panic(expected: 'Insufficient balance')]
 fn test_create_wager_insufficient_balance() {
     create_wager(2000, 2200);
-}
-
-fn create_wager(deposit: u256, stake: u256) {
-    let (wager, wager_contract) = deploy_wager();
-    let (escrow, strk_dispatcher) = deploy_escrow();
-    let creator = OWNER();
-    let mut spy = spy_events();
-
-    wager.set_escrow_address(escrow.contract_address);
-    cheat_caller_address(strk_dispatcher.contract_address, creator, CheatSpan::TargetCalls(1));
-    strk_dispatcher.approve(escrow.contract_address, deposit);
-    escrow.deposit_to_wallet(creator, deposit);
-
-    assert(strk_dispatcher.balance_of(escrow.contract_address) == deposit, 'wrong amount');
-    assert(escrow.get_balance(creator) == deposit, 'wrong balance');
-
-    let title = "My Wager";
-    let terms = "My terms";
-    let category = Category::Sports;
-    let mode = Mode::HeadToHead;
-
-    cheat_caller_address(wager_contract, creator, CheatSpan::TargetCalls(1));
-    println!("Creator's balance: {}", escrow.get_balance(creator));
-    println!("Creator's stake: {}", stake);
-    let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode);
-    let expected_event = StrkWager::Event::WagerCreated(
-        StrkWager::WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode }
-    );
-
-    spy.assert_emitted(@array![(wager_contract, expected_event)]);
 }
