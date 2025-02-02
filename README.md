@@ -43,13 +43,14 @@ curl --proto '=https' --tlsv1.2 -sSf https://docs.swmansion.com/scarb/install.sh
 curl --proto '=https' --tlsv1.2 -sSf https://docs.swmansion.com/scarb/install.sh | sh -s -- -v 2.10.0-rc.1
 ```
 
-Then install the project dependencies:
+### 2. Navigating to the Contracts Folder
+Before running any `scarb` commands, ensure you are in the contracts directory:
 
 ```bash
-scarb build
+cd contracts
 ```
 
-### 2. Building the Contracts
+### 3. Building the Contracts
 To build the Cairo contracts:
 
 ```bash
@@ -58,14 +59,14 @@ scarb build
 
 The compiled contracts will be located in the `target/dev` directory.
 
-### 3. Formatting Contracts
+### 4. Formatting Contracts
 Ensure consistent code style by formatting the contracts:
 
 ```bash
 scarb fmt
 ```
 
-### 4. Running Tests
+### 5. Running Tests
 To run tests for the smart contracts:
 
 ```bash
