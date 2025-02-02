@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use contracts::wager::types::{Wager, Category};
+use contracts::wager::types::{Wager, Category, Mode};
 
 #[starknet::interface]
 pub trait IStrkWager<TContractState> {
@@ -12,7 +12,8 @@ pub trait IStrkWager<TContractState> {
         category: Category,
         title: ByteArray,
         terms: ByteArray,
-        stake: u256
+        stake: u256,
+        mode: Mode
     ) -> u64;
     fn join_wager(ref self: TContractState, wager_id: u64);
     fn get_wager(self: @TContractState, wager_id: u64) -> Wager;
