@@ -1,10 +1,13 @@
 use starknet::ContractAddress;
-use starknet::{testing, contract_address_const};
+use starknet::{testing, contract_address_const, get_caller_address};
 
 use contracts::wager::wager::StrkWager;
 
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
-use contracts::tests::utils::{deploy_wager};
+use contracts::tests::utils::{deploy_wager, deploy_mock_erc20, deploy_escrow, OWNER};
+use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
+
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
@@ -67,4 +70,30 @@ fn test_get_escrow_address() {
 
     // Check if the updated address is as expected
     assert!(final_address == second_address, "The function did not return the updated address");
+}
+
+#[test]
+#[should_panic(expected: ('Escrow not configured',))]
+fn test_fund_wallet_no_escrow() {
+    // Deploy wager without setting escrow
+    let (wager, _) = deploy_wager();
+    
+    // Try to fund wallet without escrow configured
+    wager.fund_wallet(100_u256);
+}
+
+#[test]
+#[should_panic(expected: ('Amount must be positive',))]
+fn test_fund_wallet_zero_amount() {
+    // Deploy contracts
+    let (wager, _) = deploy_wager();
+    
+    // Deploy escrow - using the correct signature without arguments
+    let (escrow, strk_dispatcher) = deploy_escrow();
+    
+    // Set escrow address
+    wager.set_escrow_address(escrow.contract_address);
+    
+    // Test with zero amount - should panic
+    wager.fund_wallet(0_u256);
 }
