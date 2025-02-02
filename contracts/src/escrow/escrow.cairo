@@ -44,7 +44,7 @@ pub mod Escrow {
     }
 
     // Define the WAGER_ROLE
-    const WAGER_ROLE: felt252 = 0x57414745525f524f4c45; // Unique identifier for the role
+    const WAGER_ROLE: felt252 = selector!("WAGER_ROLE"); // Unique identifier for the role
 
     #[constructor]
     fn constructor(ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress) {
