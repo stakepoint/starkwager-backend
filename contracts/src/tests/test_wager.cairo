@@ -7,12 +7,13 @@ use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrai
 use contracts::tests::utils::{deploy_wager, deploy_mock_erc20, deploy_escrow, OWNER};
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+use openzeppelin::token::erc20::interface::{ IERC20DispatcherTrait};
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
     stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
 };
+
 
 #[test]
 fn test_set_escrow_address() {
@@ -73,6 +74,28 @@ fn test_get_escrow_address() {
 }
 
 #[test]
+fn test_fund_wallet_success() {
+    let (wager, _) = deploy_wager();
+    let (escrow, strk_dispatcher) = deploy_escrow();
+    
+    // Configure wager with escrow
+    wager.set_escrow_address(escrow.contract_address);
+    
+    let amount = 50_u256;
+    let owner = OWNER();
+    
+    // Approve tokens from OWNER for escrow
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.approve(escrow.contract_address, amount);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    
+    // Set OWNER as caller for wager contract
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.fund_wallet(amount);
+    stop_cheat_caller_address(wager.contract_address);
+}
+
+#[test]
 #[should_panic(expected: ('Escrow not configured',))]
 fn test_fund_wallet_no_escrow() {
     // Deploy wager without setting escrow
@@ -96,4 +119,18 @@ fn test_fund_wallet_zero_amount() {
     
     // Test with zero amount - should panic
     wager.fund_wallet(0_u256);
+}
+
+#[test]
+#[should_panic(expected: ('ERC20: insufficient allowance',))]
+fn test_fund_wallet_without_approval() {
+    // Deploy contracts
+    let (wager, _) = deploy_wager();
+    let (escrow, strk_dispatcher) = deploy_escrow();
+    
+    // Set escrow address
+    wager.set_escrow_address(escrow.contract_address);
+    
+    // Try to fund without any token approval
+    wager.fund_wallet(50_u256);
 }
