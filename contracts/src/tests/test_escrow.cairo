@@ -32,7 +32,7 @@ fn test_deposit_to_wallet() {
 }
 
 #[test]
-#[should_panic(expected: ('AccessControl: unauthorized',))] // Shorter error message
+#[should_panic(expected: ('AccessControl: unauthorized',))]
 fn test_deposit_to_wallet_unauthorized() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
@@ -73,7 +73,7 @@ fn test_withdraw_from_wallet() {
 }
 
 #[test]
-#[should_panic(expected: ('AccessControl: unauthorized',))] // Shorter error message
+#[should_panic(expected: ('AccessControl: unauthorized',))]
 fn test_withdraw_from_wallet_unauthorized() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
@@ -118,7 +118,7 @@ fn test_get_balance() {
 }
 
 #[test]
-#[should_panic(expected: ('AccessControl: unauthorized',))] // Shorter error message
+#[should_panic(expected: ('AccessControl: unauthorized',))]
 fn test_get_balance_unauthorized() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
