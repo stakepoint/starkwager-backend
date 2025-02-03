@@ -32,7 +32,7 @@ fn test_deposit_to_wallet() {
 }
 
 #[test]
-#[should_panic(expected: ('AccessControl: unauthorized',))]
+#[should_panic(expected: ('AccessControl: account does not have role',))]
 fn test_deposit_to_wallet_unauthorized() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
@@ -73,7 +73,7 @@ fn test_withdraw_from_wallet() {
 }
 
 #[test]
-#[should_panic(expected: ('AccessControl: unauthorized',))]
+#[should_panic(expected: ('AccessControl: account does not have role',))]
 fn test_withdraw_from_wallet_unauthorized() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
@@ -118,7 +118,7 @@ fn test_get_balance() {
 }
 
 #[test]
-#[should_panic(expected: ('AccessControl: unauthorized',))]
+#[should_panic(expected: ('AccessControl: account does not have role',))]
 fn test_get_balance_unauthorized() {
     let (escrow, strk_dispatcher) = deploy_escrow();
 
