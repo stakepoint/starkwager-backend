@@ -1,7 +1,7 @@
-import { UserRoleEnum } from 'src/users/enums/user.enum';
+import { Role } from 'src/common/enums/roles.enum';
 
 export class UserTokenDto {
   address: string;
   sub: string;
-  role: UserRoleEnum;
+  role: Role;
 }

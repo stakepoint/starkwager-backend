@@ -8,7 +8,7 @@ import {
 import { Response } from 'express';
 import { UsersService } from '../users.service';
 import { UserTokenDto } from 'src/auth/dto/token.dto';
-import { UserRoleEnum } from '../enums/user.enum';
+import { Role } from 'src/common/enums/roles.enum';
 
 @Injectable()
 export class AdminTypeGuard implements CanActivate {
@@ -19,7 +19,7 @@ export class AdminTypeGuard implements CanActivate {
       const response: Response = context.switchToHttp().getResponse();
       const tokenData: UserTokenDto = response.locals.tokenData;
       const account = await this.usersService.findOne(tokenData.sub);
-      if (!account || account.role !== UserRoleEnum.Admin) {
+      if (!account || account.roles !== Role.Admin) {
         throw new UnauthorizedException(
           'you are not authorize to perform this account',
         );

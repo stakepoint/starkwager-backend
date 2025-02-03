@@ -1,9 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { WagerService } from './services/wager.service';
 import { WagerController } from './controllers/wager.controller';
+import { CategoryService } from 'src/category/services/category.service';
 
+@Global()
 @Module({
   controllers: [WagerController],
-  providers: [WagerService],
+  providers: [WagerService, CategoryService],
+  imports: [],
 })
 export class WagerModule {}

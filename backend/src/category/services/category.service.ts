@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { CreateCategoryDto } from '../dtos/category.dto';
+import { Category } from '@prisma/client';
 
 @Injectable()
 export class CategoryService {
@@ -29,7 +30,7 @@ export class CategoryService {
     });
   }
 
-  async remove(id: string): Promise<Category> {
+  async remove(id: string) {
     return await this.prisma.category.delete({
       where: { id },
     });
