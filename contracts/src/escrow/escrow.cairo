@@ -3,7 +3,7 @@ pub mod Escrow {
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::access::accesscontrol::AccessControlComponent; // Import AccessControl
     use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
+        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map,
     };
     use starknet::{ContractAddress, get_contract_address};
 
@@ -14,7 +14,7 @@ pub mod Escrow {
     struct Storage {
         strk_dispatcher: IERC20Dispatcher,
         user_balance: Map::<ContractAddress, u256>,
-        access_control: AccessControlComponent::Storage, // Add AccessControl storage
+        access_control: AccessControlComponent::Storage // Add AccessControl storage
     }
 
     #[event]
@@ -22,7 +22,7 @@ pub mod Escrow {
     enum Event {
         Deposit: DepositEvent,
         Withdraw: WithdrawEvent,
-        RoleGranted: RoleGrantedEvent, // Event for role granting
+        RoleGranted: RoleGrantedEvent // Event for role granting
     }
 
     #[derive(Drop, starknet::Event)]
@@ -47,7 +47,9 @@ pub mod Escrow {
     const WAGER_ROLE: felt252 = 0x57414745525f524f4c45; // Unique identifier for the role
 
     #[constructor]
-    fn constructor(ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress) {
+    fn constructor(
+        ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress,
+    ) {
         self.strk_dispatcher.write(strk_dispatcher);
 
         // Initialize AccessControl
