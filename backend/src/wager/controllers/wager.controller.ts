@@ -4,7 +4,7 @@ import { CreateWagerDto } from '../dtos/wager.dto';
 import { CreateWagerGuard } from '../guards/wager.guard';
 import { UseToken } from 'src/auth/decorator/userToken.decorator';
 
-@Controller('wagers')
+@Controller('wager')
 export class WagerController {
   constructor(private readonly wagerService: WagerService) {}
 

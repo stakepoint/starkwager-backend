@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import {
@@ -12,6 +17,8 @@ import { ConfigType } from '@nestjs/config';
 
 import { AppConfig } from '../config';
 import { User } from '@prisma/client';
+import { UserTokenDto } from './dto/token.dto';
+import { StarknetHttpCodesEnum } from 'src/common/enums/httpCodes.enum';
 
 @Injectable()
 export class AuthService {
@@ -82,11 +89,17 @@ export class AuthService {
 
   private async signJwt(payload: User) {
     const { address } = payload;
-    const accessToken = await this.jwtService.signAsync({
-      address,
-      sub: payload.id,
-      role: payload.roles,
-    });
+    const accessToken = await this.jwtService.signAsync(
+      {
+        address,
+        sub: payload.id,
+        role: payload.roles,
+      },
+      {
+        secret: this.appConfig.secret,
+        expiresIn: this.appConfig.accessTokenExpiry,
+      },
+    );
 
     const refreshToken = await this.jwtService.signAsync(
       {
@@ -98,5 +111,49 @@ export class AuthService {
       },
     );
     return { accessToken, refreshToken };
+  }
+
+  verifyUserRefreshToken(token: string): UserTokenDto {
+    try {
+      const tokenSecret = this.appConfig.refreshTokenSecret;
+      return this.jwtService.verify<UserTokenDto>(token, {
+        secret: tokenSecret,
+      });
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        throw new HttpException(
+          {
+            status: StarknetHttpCodesEnum.RefreshTokenError,
+            message: 'Refresh Token expired',
+          },
+          StarknetHttpCodesEnum.RefreshTokenError,
+        );
+      }
+      throw new BadRequestException(err.message);
+    }
+  }
+
+  verifyUserToken(token: string): UserTokenDto {
+    try {
+      const tokenSecret = this.appConfig.secret;
+      return this.jwtService.verify<UserTokenDto>(token, {
+        secret: tokenSecret,
+      });
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        throw new HttpException(
+          {
+            status: StarknetHttpCodesEnum.TokenExpiredError,
+            message: 'Token expired',
+          },
+          StarknetHttpCodesEnum.TokenExpiredError,
+        );
+      }
+      throw new BadRequestException(err.message);
+    }
+  }
+
+  decode(token: string) {
+    return this.jwtService.decode(token, { complete: true });
   }
 }

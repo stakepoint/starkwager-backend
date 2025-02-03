@@ -5,9 +5,6 @@ import { UsersService } from '../users/users.service';
 import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
-import { AuthGuard } from '../common/guards/auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -28,14 +25,15 @@ import { RolesGuard } from '../common/guards/roles.guard';
   providers: [
     AuthService,
     UsersService,
-    {
-      provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: AuthGuard,
+    // },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RolesGuard,
+    // },
+    //NOTE: I cant explain why this is commented out.
   ],
 })
 export class AuthModule {}

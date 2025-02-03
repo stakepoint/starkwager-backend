@@ -19,6 +19,8 @@ export class CreateWagerGuard implements CanActivate {
       const response: Response = context.switchToHttp().getResponse();
       const tokenData: UserTokenDto = response.locals.tokenData;
       const value: CreateWagerDto = req.body;
+      if (!value || Object.keys(value).length === 0)
+        throw new BadRequestException('please enter at least one information');
       //check if the createdById matches the authenticated user’s ID
       if (value.createdById !== tokenData.sub) {
         throw new BadRequestException(
