@@ -4,14 +4,13 @@ use starknet::{testing, contract_address_const, get_caller_address};
 use contracts::wager::wager::StrkWager;
 
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
-use contracts::tests::utils::{deploy_wager, deploy_mock_erc20, deploy_escrow, OWNER};
-use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
-
-use openzeppelin::token::erc20::interface::{IERC20DispatcherTrait};
+use contracts::escrow::interface::IEscrowDispatcherTrait;
+use contracts::tests::utils::{deploy_wager, create_wager, deploy_mock_erc20, deploy_escrow, OWNER};
+use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
 };
 
 #[test]
@@ -70,6 +69,17 @@ fn test_get_escrow_address() {
 
     // Check if the updated address is as expected
     assert!(final_address == second_address, "The function did not return the updated address");
+}
+
+#[test]
+fn test_create_wager_success() {
+    create_wager(3000, 2000);
+}
+
+#[test]
+#[should_panic(expected: 'Insufficient balance')]
+fn test_create_wager_insufficient_balance() {
+    create_wager(2000, 2200);
 }
 
 #[test]

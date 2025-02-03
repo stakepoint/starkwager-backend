@@ -4,7 +4,7 @@ pub mod StrkWager {
         StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map,
     };
 
-    use starknet::{ContractAddress, get_caller_address};
+    use starknet::{ContractAddress, get_caller_address, contract_address_const};
     use core::num::traits::Zero;
 
     use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
@@ -25,12 +25,24 @@ pub mod StrkWager {
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         EscrowAddressUpdated: EscrowAddressEvent,
+        WagerCreated: WagerCreatedEvent
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct EscrowAddressEvent {
         pub old_address: ContractAddress,
         pub new_address: ContractAddress,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct WagerCreatedEvent {
+        pub wager_id: u64,
+        pub category: Category,
+        pub title: ByteArray,
+        pub terms: ByteArray,
+        pub creator: ContractAddress,
+        pub stake: u256,
+        pub mode: Mode,
     }
 
     #[constructor]
@@ -72,9 +84,36 @@ pub mod StrkWager {
             category: Category,
             title: ByteArray,
             terms: ByteArray,
-            stake: u256
+            stake: u256,
+            mode: Mode
         ) -> u64 {
-            0
+            let creator = get_caller_address();
+            let creator_balance = self.get_balance(creator);
+
+            assert(creator_balance >= stake, 'Insufficient balance');
+            let wager_id = self.wager_count.read() + 1;
+
+            let new_wager = Wager {
+                wager_id,
+                category,
+                title: title.clone(),
+                terms: terms.clone(),
+                creator,
+                stake,
+                resolved: false,
+                winner: contract_address_const::<0>(),
+                mode
+            };
+
+            self.wagers.entry(wager_id).write(new_wager);
+            self.wager_count.write(wager_id);
+            let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
+            self.wager_participants.entry(wager_id).entry(participant_id).write(creator);
+            self.wager_participants_count.entry(wager_id).write(participant_id);
+
+            self.emit(WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode });
+
+            wager_id
         }
 
         //TODO
