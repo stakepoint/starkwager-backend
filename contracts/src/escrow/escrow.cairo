@@ -1,20 +1,45 @@
 #[starknet::contract]
 pub mod Escrow {
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use openzeppelin::access::accesscontrol::AccessControlComponent; // Import AccessControl
     use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map,
+        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
     };
     use starknet::{ContractAddress, get_contract_address};
+    use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin_access::accesscontrol::{AccessControlComponent};
+    use openzeppelin_access::ownable::OwnableComponent;
 
     use contracts::escrow::interface::IEscrow;
     use core::num::traits::Zero;
+
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+    component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    #[abi(embed_v0)]
+    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
+
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
+
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[abi(embed_v0)]
+    impl AccessControlImpl =
+        AccessControlComponent::AccessControlImpl<ContractState>;
+
+    impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         strk_dispatcher: IERC20Dispatcher,
         user_balance: Map::<ContractAddress, u256>,
-        access_control: AccessControlComponent::Storage // Add AccessControl storage
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage,
+        #[substorage(v0)]
+        accesscontrol: AccessControlComponent::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
     }
 
     #[event]
@@ -22,7 +47,12 @@ pub mod Escrow {
     enum Event {
         Deposit: DepositEvent,
         Withdraw: WithdrawEvent,
-        RoleGranted: RoleGrantedEvent // Event for role granting
+        #[flat]
+        OwnableEvent: OwnableComponent::Event,
+        #[flat]
+        AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -37,77 +67,59 @@ pub mod Escrow {
         amount: u256,
     }
 
-    #[derive(Drop, starknet::Event)]
-    pub struct RoleGrantedEvent {
-        role: felt252,
-        account: ContractAddress,
-    }
 
-    // Define the WAGER_ROLE as a constant felt252 value
-    const WAGER_ROLE: felt252 = 0x57414745525f524f4c45; // Unique identifier for the role
+    const WAGER_ROLE: felt252 = selector!("WAGER_ROLE"); // Unique identifier for the role
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress,
+        ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress
     ) {
         self.strk_dispatcher.write(strk_dispatcher);
-
-        // Initialize AccessControl
-        AccessControlComponent::initializer(ref self.access_control);
-
-        // Grant WAGER_ROLE to the Wager Contract
-        AccessControlComponent::grant_role(ref self.access_control, WAGER_ROLE, wager_contract);
-
-        // Emit RoleGranted event
-        self.emit(RoleGrantedEvent { role: WAGER_ROLE, account: wager_contract });
+        self.accesscontrol.initializer();
+        self.accesscontrol._grant_role(WAGER_ROLE, wager_contract);
     }
 
     #[abi(embed_v0)]
     impl EscrowImpl of IEscrow<ContractState> {
-        // Restrict to WAGER_ROLE
+        //TODO: Add access control and restrict to wager contract
         fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
-            // Ensure only Wager Contract can call this function
-            AccessControlComponent::assert_only_role(ref self.access_control, WAGER_ROLE);
-
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
             // Validate input
             assert(!from.is_zero(), 'Invalid address');
             assert(amount > 0, 'Amount must be positive');
 
             let strk_dispatcher = self.strk_dispatcher.read();
 
-            // Transfers funds to escrow
+            // transfers funds to escrow
             strk_dispatcher.transfer_from(from, get_contract_address(), amount);
             self.user_balance.entry(from).write(amount + self.get_balance(from));
             self.emit(DepositEvent { from, amount });
         }
 
-        // Restrict to WAGER_ROLE
+        //TODO: restrict to wager contract
         fn withdraw_from_wallet(ref self: ContractState, to: ContractAddress, amount: u256) {
-            // Ensure only Wager Contract can call this function
-            AccessControlComponent::assert_only_role(ref self.access_control, WAGER_ROLE);
-
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
             let strk_dispatcher = self.strk_dispatcher.read();
 
             // Validate recipient address
             assert(!to.is_zero(), 'Invalid address');
 
-            // Check if the address has enough funds
+            // checks if to address has enough funds
             assert(self.get_balance(to) >= amount, 'Insufficient funds');
 
-            // Update balance first to prevent reentrancy
+            // update balance first to prevent reentrancy
             self.user_balance.entry(to).write(self.get_balance(to) - amount);
 
-            // Transfers funds from escrow
+            // transfers funds from escrow
             strk_dispatcher.transfer(to, amount);
             self.emit(WithdrawEvent { to, amount });
         }
 
-        // Restrict to WAGER_ROLE
+        //TODO: restrict to wager contract
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
-            // Ensure only Wager Contract can call this function
-            AccessControlComponent::assert_only_role(ref self.access_control, WAGER_ROLE);
-
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
             self.user_balance.entry(address).read()
         }
+        //TODO: stake amount?
     }
 }
