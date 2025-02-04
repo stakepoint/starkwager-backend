@@ -3,7 +3,8 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, cheat_caller_address, CheatSpan
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, cheat_caller_address, CheatSpan,
+    stop_cheat_block_timestamp
 };
 
 use contracts::wager::wager::StrkWager;
@@ -14,6 +15,10 @@ use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrai
 
 pub fn OWNER() -> ContractAddress {
     'owner'.try_into().unwrap()
+}
+
+pub fn WAGER_ADDRESS() -> ContractAddress {
+    'wager'.try_into().unwrap()
 }
 
 pub fn BOB() -> ContractAddress {
@@ -33,9 +38,11 @@ pub fn deploy_mock_erc20() -> IERC20Dispatcher {
 pub fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
     let contract = declare("Escrow").unwrap().contract_class();
     let strk_dispatcher = deploy_mock_erc20();
+    let wager_address = WAGER_ADDRESS();
 
     let mut calldata = array![];
     strk_dispatcher.serialize(ref calldata);
+    wager_address.serialize(ref calldata);
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
 
@@ -59,11 +66,16 @@ pub fn create_wager(deposit: u256, stake: u256) {
     let mut spy = spy_events();
 
     wager.set_escrow_address(escrow.contract_address);
+
     cheat_caller_address(strk_dispatcher.contract_address, creator, CheatSpan::TargetCalls(1));
     strk_dispatcher.approve(escrow.contract_address, deposit);
+    stop_cheat_block_timestamp(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(escrow.contract_address, WAGER_ADDRESS()); // Simulate Wager Contract
     escrow.deposit_to_wallet(creator, deposit);
 
     assert(strk_dispatcher.balance_of(escrow.contract_address) == deposit, 'wrong amount');
+
     assert(escrow.get_balance(creator) == deposit, 'wrong balance');
 
     let title = "My Wager";
@@ -71,12 +83,13 @@ pub fn create_wager(deposit: u256, stake: u256) {
     let category = Category::Sports;
     let mode = Mode::HeadToHead;
 
-    cheat_caller_address(wager_contract, creator, CheatSpan::TargetCalls(1));
     println!("Creator's balance: {}", escrow.get_balance(creator));
     println!("Creator's stake: {}", stake);
+
+    cheat_caller_address(wager_contract, creator, CheatSpan::TargetCalls(1));
     let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode);
     let expected_event = StrkWager::Event::WagerCreated(
-        StrkWager::WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode }
+        StrkWager::WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode },
     );
 
     spy.assert_emitted(@array![(wager_contract, expected_event)]);

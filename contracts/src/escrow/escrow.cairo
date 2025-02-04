@@ -5,14 +5,41 @@ pub mod Escrow {
         StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
     };
     use starknet::{ContractAddress, get_contract_address};
+    use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin_access::accesscontrol::{AccessControlComponent};
+    use openzeppelin_access::ownable::OwnableComponent;
 
     use contracts::escrow::interface::IEscrow;
     use core::num::traits::Zero;
+
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+    component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    #[abi(embed_v0)]
+    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
+
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
+
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[abi(embed_v0)]
+    impl AccessControlImpl =
+        AccessControlComponent::AccessControlImpl<ContractState>;
+
+    impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         strk_dispatcher: IERC20Dispatcher,
         user_balance: Map::<ContractAddress, u256>,
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage,
+        #[substorage(v0)]
+        accesscontrol: AccessControlComponent::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
     }
 
     #[event]
@@ -20,6 +47,12 @@ pub mod Escrow {
     enum Event {
         Deposit: DepositEvent,
         Withdraw: WithdrawEvent,
+        #[flat]
+        OwnableEvent: OwnableComponent::Event,
+        #[flat]
+        AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -34,15 +67,24 @@ pub mod Escrow {
         amount: u256,
     }
 
+
+    const WAGER_ROLE: felt252 = selector!("WAGER_ROLE"); // Unique identifier for the role
+
     #[constructor]
-    fn constructor(ref self: ContractState, strk_dispatcher: IERC20Dispatcher,) {
+    fn constructor(
+        ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress
+    ) {
         self.strk_dispatcher.write(strk_dispatcher);
+        self.accesscontrol.initializer();
+        self.accesscontrol._grant_role(WAGER_ROLE, wager_contract);
     }
 
     #[abi(embed_v0)]
     impl EscrowImpl of IEscrow<ContractState> {
         //TODO: Add access control and restrict to wager contract
         fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
+
             // Validate input
             assert(!from.is_zero(), 'Invalid address');
             assert(amount > 0, 'Amount must be positive');
@@ -57,6 +99,7 @@ pub mod Escrow {
 
         //TODO: restrict to wager contract
         fn withdraw_from_wallet(ref self: ContractState, to: ContractAddress, amount: u256) {
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
             let strk_dispatcher = self.strk_dispatcher.read();
 
             // Validate recipient address
@@ -75,6 +118,7 @@ pub mod Escrow {
 
         //TODO: restrict to wager contract
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
             self.user_balance.entry(address).read()
         }
         //TODO: stake amount?
