@@ -35,10 +35,9 @@ pub fn deploy_mock_erc20() -> IERC20Dispatcher {
     IERC20Dispatcher { contract_address }
 }
 
-pub fn deploy_escrow() -> (IEscrowDispatcher, IERC20Dispatcher) {
+pub fn deploy_escrow(wager_address: ContractAddress) -> (IEscrowDispatcher, IERC20Dispatcher) {
     let contract = declare("Escrow").unwrap().contract_class();
     let strk_dispatcher = deploy_mock_erc20();
-    let wager_address = WAGER_ADDRESS();
 
     let mut calldata = array![];
     strk_dispatcher.serialize(ref calldata);
@@ -61,7 +60,7 @@ pub fn deploy_wager() -> (IStrkWagerDispatcher, ContractAddress) {
 
 pub fn create_wager(deposit: u256, stake: u256) {
     let (wager, wager_contract) = deploy_wager();
-    let (escrow, strk_dispatcher) = deploy_escrow();
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_contract);
     let creator = OWNER();
     let mut spy = spy_events();
 
@@ -71,7 +70,7 @@ pub fn create_wager(deposit: u256, stake: u256) {
     strk_dispatcher.approve(escrow.contract_address, deposit);
     stop_cheat_block_timestamp(strk_dispatcher.contract_address);
 
-    start_cheat_caller_address(escrow.contract_address, WAGER_ADDRESS()); // Simulate Wager Contract
+    start_cheat_caller_address(escrow.contract_address, wager_contract); // Simulate Wager Contract
     escrow.deposit_to_wallet(creator, deposit);
 
     assert(strk_dispatcher.balance_of(escrow.contract_address) == deposit, 'wrong amount');
