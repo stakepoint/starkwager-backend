@@ -89,17 +89,11 @@ export class AuthService {
 
   private async signJwt(payload: User) {
     const { address } = payload;
-    const accessToken = await this.jwtService.signAsync(
-      {
-        address,
-        sub: payload.id,
-        role: payload.roles,
-      },
-      {
-        secret: this.appConfig.secret,
-        expiresIn: this.appConfig.accessTokenExpiry,
-      },
-    );
+    const accessToken = await this.jwtService.signAsync({
+      address,
+      sub: payload.id,
+      role: payload.roles,
+    });
 
     const refreshToken = await this.jwtService.signAsync(
       {
@@ -111,49 +105,5 @@ export class AuthService {
       },
     );
     return { accessToken, refreshToken };
-  }
-
-  verifyUserRefreshToken(token: string): UserTokenDto {
-    try {
-      const tokenSecret = this.appConfig.refreshTokenSecret;
-      return this.jwtService.verify<UserTokenDto>(token, {
-        secret: tokenSecret,
-      });
-    } catch (err) {
-      if (err.name === 'TokenExpiredError') {
-        throw new HttpException(
-          {
-            status: StarknetHttpCodesEnum.RefreshTokenError,
-            message: 'Refresh Token expired',
-          },
-          StarknetHttpCodesEnum.RefreshTokenError,
-        );
-      }
-      throw new BadRequestException(err.message);
-    }
-  }
-
-  verifyUserToken(token: string): UserTokenDto {
-    try {
-      const tokenSecret = this.appConfig.secret;
-      return this.jwtService.verify<UserTokenDto>(token, {
-        secret: tokenSecret,
-      });
-    } catch (err) {
-      if (err.name === 'TokenExpiredError') {
-        throw new HttpException(
-          {
-            status: StarknetHttpCodesEnum.TokenExpiredError,
-            message: 'Token expired',
-          },
-          StarknetHttpCodesEnum.TokenExpiredError,
-        );
-      }
-      throw new BadRequestException(err.message);
-    }
-  }
-
-  decode(token: string) {
-    return this.jwtService.decode(token, { complete: true });
   }
 }

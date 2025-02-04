@@ -1,11 +1,4 @@
-import {
-  Logger,
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-  ValidationPipe,
-} from '@nestjs/common';
+import { Logger, Module, ValidationPipe } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -19,10 +12,6 @@ import { AllExceptionsFilter } from './common/exceptions/all-exception.filter';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { CategoryModule } from './category/category.module';
 import { WagerModule } from './wager/wager.module';
-import { UserTokenMiddleware } from './common/middleware/auth.middleware';
-import { AuthService } from './auth/auth.service';
-import { UsersService } from './users/users.service';
-import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -51,9 +40,6 @@ import { JwtService } from '@nestjs/jwt';
   controllers: [AppController],
   providers: [
     AppService,
-    AuthService,
-    UsersService,
-    JwtService,
     {
       provide: APP_PIPE,
       useValue: new ValidationPipe({ whitelist: true, transform: true }),
@@ -64,11 +50,4 @@ import { JwtService } from '@nestjs/jwt';
     },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    return consumer.apply(UserTokenMiddleware).forRoutes({
-      path: '*',
-      method: RequestMethod.ALL,
-    });
-  }
-}
+export class AppModule {}
