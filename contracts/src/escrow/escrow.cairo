@@ -84,6 +84,7 @@ pub mod Escrow {
         //TODO: Add access control and restrict to wager contract
         fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
+
             // Validate input
             assert(!from.is_zero(), 'Invalid address');
             assert(amount > 0, 'Amount must be positive');
