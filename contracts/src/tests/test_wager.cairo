@@ -85,8 +85,8 @@ fn test_create_wager_insufficient_balance() {
 #[test]
 fn test_fund_wallet_success() {
     // Deploy contracts
-    let (wager, _) = deploy_wager();
-    let (escrow, strk_dispatcher) = deploy_escrow();
+    let (wager, wager_address) = deploy_wager();
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
 
     // Configure wager with escrow
     wager.set_escrow_address(escrow.contract_address);
@@ -118,10 +118,10 @@ fn test_fund_wallet_no_escrow() {
 #[test]
 #[should_panic(expected: ('Amount must be positive',))]
 fn test_fund_wallet_zero_amount() {
-    let (wager, _) = deploy_wager();
+    let (wager, wager_address) = deploy_wager();
 
     // Deploy escrow - using the correct signature without arguments
-    let (escrow, strk_dispatcher) = deploy_escrow();
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
 
     // Set escrow address
     wager.set_escrow_address(escrow.contract_address);
@@ -133,11 +133,13 @@ fn test_fund_wallet_zero_amount() {
 #[test]
 #[should_panic(expected: ('ERC20: insufficient allowance',))]
 fn test_fund_wallet_without_approval() {
-    let (wager, _) = deploy_wager();
-    let (escrow, strk_dispatcher) = deploy_escrow();
+    let (wager, wager_address) = deploy_wager();
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
 
     wager.set_escrow_address(escrow.contract_address);
 
     // Try to fund without any token approval
+    start_cheat_caller_address(wager.contract_address, OWNER());
     wager.fund_wallet(50_u256);
+    stop_cheat_caller_address(wager.contract_address);
 }
