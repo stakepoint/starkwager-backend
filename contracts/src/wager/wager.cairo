@@ -50,8 +50,23 @@ pub mod StrkWager {
 
     #[abi(embed_v0)]
     impl StrkWagerImpl of IStrkWager<ContractState> {
-        //TODO
-        fn fund_wallet(ref self: ContractState, amount: u256) {}
+        fn fund_wallet(ref self: ContractState, amount: u256) {
+            // Validate amount
+            assert(amount > 0, 'Amount must be positive');
+
+            // Get caller address
+            let caller = get_caller_address();
+            assert(!caller.is_zero(), 'Invalid caller address');
+
+            // Get escrow contract address and create dispatcher
+            let escrow_address = self.escrow_address.read();
+            assert(!escrow_address.is_zero(), 'Escrow not configured');
+
+            let escrow_dispatcher = IEscrowDispatcher { contract_address: escrow_address };
+
+            // Call deposit_to_wallet on escrow contract
+            escrow_dispatcher.deposit_to_wallet(caller, amount);
+        }
 
         //TODO
         fn withdraw_from_wallet(ref self: ContractState, amount: u256) {}
