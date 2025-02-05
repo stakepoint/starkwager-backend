@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import {
@@ -12,6 +17,8 @@ import { ConfigType } from '@nestjs/config';
 
 import { AppConfig } from '../config';
 import { User } from '@prisma/client';
+import { UserTokenDto } from './dto/token.dto';
+import { StarknetHttpCodesEnum } from 'src/common/enums/httpCodes.enum';
 
 @Injectable()
 export class AuthService {
@@ -85,7 +92,7 @@ export class AuthService {
     const accessToken = await this.jwtService.signAsync({
       address,
       sub: payload.id,
-      role: payload.role,
+      role: payload.roles,
     });
 
     const refreshToken = await this.jwtService.signAsync(

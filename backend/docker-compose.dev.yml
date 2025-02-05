@@ -9,6 +9,8 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     ports:
       - 8080:${PORT}
+    networks:
+      - starknet
     volumes:
       - ./src:/app/src
     depends_on:
@@ -25,6 +27,8 @@ services:
     user: ${POSTGRES_USER}
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - starknet
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -56,8 +60,13 @@ services:
         condition: service_healthy
     volumes:
       - ./prisma:/app/prisma:ro # Mount Prisma schema read-only
+    networks:
+      - starknet
     env_file:
       - .env
 
 volumes:
   db-data:
+networks:
+  starknet:
+    driver: bridge

@@ -10,11 +10,15 @@ import { AppConfig } from './config';
 
 import { AllExceptionsFilter } from './common/exceptions/all-exception.filter';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { CategoryModule } from './category/category.module';
+import { WagerModule } from './wager/wager.module';
 
 @Module({
   imports: [
     UsersModule,
     AuthModule,
+    CategoryModule,
+    WagerModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,

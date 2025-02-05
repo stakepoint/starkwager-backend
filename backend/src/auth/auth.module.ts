@@ -6,8 +6,8 @@ import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { AuthGuard } from '../common/guards/auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @Module({
   imports: [
