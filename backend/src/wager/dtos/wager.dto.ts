@@ -25,7 +25,7 @@ export class CreateWagerDto {
   stakeAmount: number;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   createdById: string;
 
   @IsOptional()

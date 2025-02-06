@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { WagerService } from '../services/wager.service';
 import { CreateWagerDto } from '../dtos/wager.dto';
 import { CreateWagerGuard } from '../guards/wager.guard';
@@ -9,8 +17,9 @@ export class WagerController {
 
   @Post('create')
   @UseGuards(CreateWagerGuard)
-  create(@Body() data: CreateWagerDto) {
-    return this.wagerService.createWager(data);
+  create(@Body() data: CreateWagerDto, @Req() req: Request) {
+    const userId = req['user'].sub;
+    return this.wagerService.createWager({ ...data, createdById: userId });
   }
 
   @Get('all')
