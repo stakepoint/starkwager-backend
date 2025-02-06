@@ -1,0 +1,19 @@
+services:
+  prisma_studio:
+    build:
+      context: .
+      dockerfile: Dockerfile.prisma
+    ports:
+      - 5555:5555
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - ./prisma:/app/prisma:ro
+    networks:
+      - backend_starknet
+    env_file:
+      - .env
+
+networks:
+  backend_starknet:
+    external: true

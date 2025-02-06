@@ -47,24 +47,6 @@ services:
     env_file:
       - .env
       
-  prisma_studio:
-    build:
-      context: .
-      dockerfile: Dockerfile.prisma
-    ports:
-      - 5555:5555
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-    volumes:
-      - ./prisma:/app/prisma:ro # Mount Prisma schema read-only
-    networks:
-      - starknet
-    env_file:
-      - .env
-
 volumes:
   db-data:
 networks:

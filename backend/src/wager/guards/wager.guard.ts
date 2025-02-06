@@ -7,35 +7,46 @@ import {
 import { Request } from 'express';
 import { CategoryService } from 'src/category/services/category.service';
 import { CreateWagerDto } from '../dtos/wager.dto';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class CreateWagerGuard implements CanActivate {
   constructor(private readonly categoryService: CategoryService) {}
 
   async canActivate(context: ExecutionContext) {
-    try {
-      const req: Request = context.switchToHttp().getRequest();
-      const user = req['user'];
+    const req: Request = context.switchToHttp().getRequest();
 
-      const value: CreateWagerDto = req.body;
-      if (!value || Object.keys(value).length === 0)
-        throw new BadRequestException('please enter at least one information');
+    // Convert the raw body to an instance of CreateWagerDto
+    const dto = plainToInstance(CreateWagerDto, req.body);
 
-      //check if the createdById matches the authenticated user’s ID
-      if (value.createdById !== user.sub) {
-        throw new BadRequestException(
-          'you are not authorized to perform this action',
-        );
-      }
-      //check if category exists
-      const isExists = await this.categoryService.findOne(value.categoryId);
-
-      if (!isExists) {
-        throw new BadRequestException('kindly enter a value category');
-      }
-      return true;
-    } catch (e) {
-      throw new BadRequestException(e.message);
+    // Validate the DTO
+    const errors = await validate(plainToInstance(CreateWagerDto, req.body));
+    if (errors.length > 0) {
+      const formattedErrors = this.formatValidationErrors(errors);
+      throw new BadRequestException(formattedErrors);
     }
+
+    // Check if the category exists
+    const isExists = await this.categoryService.findOne(dto.categoryId);
+    if (!isExists) {
+      throw new BadRequestException('Kindly enter a valid category');
+    }
+
+    // Attach the validated DTO to the request for later use
+    req.body = dto;
+
+    return true;
+  }
+  private formatValidationErrors(errors: any[]) {
+    const messages = errors.flatMap((error) => {
+      return Object.values(error.constraints);
+    });
+
+    return {
+      message: messages,
+      error: 'Bad Request',
+      statusCode: 400,
+    };
   }
 }
