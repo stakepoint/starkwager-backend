@@ -21,7 +21,7 @@ export class CreateWagerGuard implements CanActivate {
     const dto = plainToInstance(CreateWagerDto, req.body);
 
     // Validate the DTO
-    const errors = await validate(plainToInstance(CreateWagerDto, req.body));
+    const errors = await validate(dto);
     if (errors.length > 0) {
       const formattedErrors = this.formatValidationErrors(errors);
       throw new BadRequestException(formattedErrors);
