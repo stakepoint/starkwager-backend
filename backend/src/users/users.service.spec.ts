@@ -1,20 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
+import { PrismaService } from 'nestjs-prisma';
+import { UpdateUsernameDto } from './dto/update-username.dto';
+import { User } from '@prisma/client';
 
 describe('UsersService', () => {
   let service: UsersService;
+  let prismaService: PrismaService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService],
+      providers: [UsersService, PrismaService],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
+    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
-  });
 });
 
 // import { Test, TestingModule } from '@nestjs/testing';
@@ -63,3 +67,32 @@ describe('UsersService', () => {
 //     expect(result).toEqual(createdUser);
 //   });
 // });
+
+  describe('updateUsername', () => {
+    it('should update the username', async () => {
+      const userId = 'test-user-id';
+      const updateUsernameDto: UpdateUsernameDto = { username: 'newUsername' };
+      const updatedUser: User = {
+        id: userId,
+        address: 'test-address',
+        email: 'test@example.com',
+        username: 'newUsername',
+        picture: null,
+        isVerified: false,
+        roles: 'User',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prismaService.user, 'update').mockResolvedValue(updatedUser);
+
+      const result = await service.updateUsername(userId, updateUsernameDto);
+
+      expect(result).toEqual(updatedUser);
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: { username: 'newUsername' },
+      });
+    });
+  });
+});

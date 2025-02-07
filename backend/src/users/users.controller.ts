@@ -6,10 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUsernameDto } from './dto/update-username.dto';
+import { AuthGuard } from '../common/guards/auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -38,5 +42,12 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch('/update')
+  updateUsername(@Req() req, @Body() updateUsernameDto: UpdateUsernameDto) {
+    const userId = req.user.id;
+    return this.usersService.updateUsername(userId, updateUsernameDto);
   }
 }

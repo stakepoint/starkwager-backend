@@ -3,6 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from 'nestjs-prisma';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '@prisma/client';
+import { UpdateUsernameDto } from './dto/update-username.dto';
 
 @Injectable()
 export class UsersService {
@@ -33,6 +34,7 @@ export class UsersService {
       },
     });
   }
+
   async findOneByAddress(address: string) {
     return this.prisma.user.findUnique({
       where: {
@@ -40,11 +42,23 @@ export class UsersService {
       },
     });
   }
+
   update(id: string, updateUserDto: UpdateUserDto) {
     return `This action updates a #${id} user`;
   }
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async updateUsername(userId: string, updateUsernameDto: UpdateUsernameDto): Promise<User> {
+    const { username } = updateUsernameDto;
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { username },
+    });
+
+    return updatedUser;
   }
 }
