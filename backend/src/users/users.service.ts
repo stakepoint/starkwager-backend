@@ -51,7 +51,10 @@ export class UsersService {
     return `This action removes a #${id} user`;
   }
 
-  async updateUsername(userId: string, updateUsernameDto: UpdateUsernameDto): Promise<User> {
+  async updateUsername(
+    userId: string,
+    updateUsernameDto: UpdateUsernameDto,
+  ): Promise<User> {
     const { username } = updateUsernameDto;
 
     const updatedUser = await this.prisma.user.update({
