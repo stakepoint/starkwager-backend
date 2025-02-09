@@ -6,12 +6,10 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
   Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
 
 @Controller('users')
@@ -33,11 +31,6 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
-  }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
@@ -45,7 +38,7 @@ export class UsersController {
 
   @Patch('/update')
   updateUsername(@Req() req, @Body() updateUsernameDto: UpdateUsernameDto) {
-    const userId = req.user.id;
+    const userId = req.user.sub;
     return this.usersService.updateUsername(userId, updateUsernameDto);
   }
 }
