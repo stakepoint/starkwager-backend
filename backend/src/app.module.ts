@@ -52,4 +52,4 @@ import { HashtagsModule } from './hashtags/hashtags.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

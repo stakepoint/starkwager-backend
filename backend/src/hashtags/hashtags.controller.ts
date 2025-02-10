@@ -8,17 +8,17 @@ import { CreateHashtagDto } from './dto/create-hashtag.dto';
 @Controller('hashtags')
 @UseGuards(RolesGuard) // Apply role guard globally in this controller
 export class HashtagsController {
-    constructor(private readonly hashtagsService: HashtagsService) { }
+  constructor(private readonly hashtagsService: HashtagsService) {}
 
-    @Post()
-    @Roles(Role.Admin)
-    async create(@Body() createHashtagDto: CreateHashtagDto) {
-        const hashtag = await this.hashtagsService.create(createHashtagDto.name);
-        return { message: 'Hashtag created successfully', data: hashtag };
-    }
+  @Post()
+  @Roles(Role.Admin)
+  async create(@Body() createHashtagDto: CreateHashtagDto) {
+    const hashtag = await this.hashtagsService.create(createHashtagDto.name);
+    return { message: 'Hashtag created successfully', data: hashtag };
+  }
 
-    @Get()
-    async findAll() {
-        return this.hashtagsService.findAll();
-    }
+  @Get()
+  async findAll() {
+    return this.hashtagsService.findAll();
+  }
 }
