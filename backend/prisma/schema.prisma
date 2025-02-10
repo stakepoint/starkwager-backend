@@ -63,3 +63,11 @@ enum Role {
   Admin
 }
 
+model Hashtag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+  
+  @@map("hashtags")
+}

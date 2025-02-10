@@ -12,6 +12,7 @@ import { AllExceptionsFilter } from './common/exceptions/all-exception.filter';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { CategoryModule } from './category/category.module';
 import { WagerModule } from './wager/wager.module';
+import { HashtagsModule } from './hashtags/hashtags.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { WagerModule } from './wager/wager.module';
     AuthModule,
     CategoryModule,
     WagerModule,
+    HashtagsModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
