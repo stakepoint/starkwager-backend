@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HashtagsService } from '../src/hashtags/hashtags.service';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { HashtagsService } from '../hashtags.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 describe('HashtagsService', () => {
     let service: HashtagsService;

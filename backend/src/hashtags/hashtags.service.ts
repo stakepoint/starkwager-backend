@@ -6,19 +6,12 @@ export class HashtagsService {
     constructor(private prisma: PrismaService) { }
 
     async create(name: string) {
-        try {
-            return await this.prisma.hashtag.create({
-                data: { name },
-            });
-        } catch (error) {
-            if (error.code === 'P2002') {
-                throw new Error('Hashtag already exists');
-            }
-            throw error;
-        }
+        return this.prisma.hashtag.create({
+            data: { name },
+        });
     }
+
     async findAll() {
         return this.prisma.hashtag.findMany();
     }
-
 }
