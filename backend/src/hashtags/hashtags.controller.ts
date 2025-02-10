@@ -13,7 +13,7 @@ export class HashtagsController {
   @Post()
   @Roles(Role.Admin)
   async create(@Body() createHashtagDto: CreateHashtagDto) {
-    const hashtag = await this.hashtagsService.create(createHashtagDto.name);
+    const hashtag = await this.hashtagsService.create(createHashtagDto);
     return { message: 'Hashtag created successfully', data: hashtag };
   }
 

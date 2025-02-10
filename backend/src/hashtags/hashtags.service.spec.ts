@@ -20,7 +20,7 @@ describe('HashtagsService', () => {
       .spyOn(prisma.hashtag, 'create')
       .mockResolvedValue({ id: '1', name: 'NestJS', createdAt: new Date() });
 
-    const result = await service.create('NestJS');
+    const result = await service.create({ name: 'NestJS' });
     expect(result.name).toBe('NestJS');
   });
 
