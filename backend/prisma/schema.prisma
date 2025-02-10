@@ -45,8 +45,8 @@ model Wager {
 
 model User {
   id         String   @id @default(uuid())
-  email      String?  @unique
-  username   String?  @unique
+  email      String?  @unique 
+  username   String?  @unique @db.Citext
   address    String   @unique
   picture    String?
   isVerified Boolean  @default(false)
