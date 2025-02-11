@@ -145,9 +145,19 @@ pub mod StrkWager {
             self.wagers.entry(wager_id).read()
         }
 
-        //TODO
+
         fn get_wager_participants(self: @ContractState, wager_id: u64) -> Span<ContractAddress> {
-            array![].span()
+            let participant_count = self.wager_participants_count.entry(wager_id).read();
+            let mut participants = array![];
+            let mut i = 1;
+
+            while i <= participant_count {
+                let participant = self.wager_participants.entry(wager_id).entry(i).read();
+                participants.append(participant);
+                i += 1;
+            };
+
+            participants.span()
         }
 
         fn get_escrow_address(self: @ContractState) -> ContractAddress {

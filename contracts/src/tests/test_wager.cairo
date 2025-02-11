@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 use starknet::{testing, contract_address_const, get_caller_address};
 
 use contracts::wager::wager::StrkWager;
-
+use contracts::wager::types::{Category, Mode};
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
 use contracts::tests::utils::{deploy_wager, create_wager, deploy_mock_erc20, deploy_escrow, OWNER};
@@ -143,3 +143,57 @@ fn test_fund_wallet_without_approval() {
     wager.fund_wallet(50_u256);
     stop_cheat_caller_address(wager.contract_address);
 }
+
+
+#[test]
+fn test_join_wager_success() {
+    let (wager, wager_address) = deploy_wager();
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
+    let mut spy = spy_events();
+
+    // Configure wager with escrow
+    wager.set_escrow_address(escrow.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(stake, stake);
+
+    // Fund the wallet of the participant
+    let owner = OWNER();
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Set OWNER as caller for wager contract
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.join_wager(wager_id);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let participants = wager.get_wager_participants(wager_id);
+    let mut found = false;
+    for participant_address in participants {
+        if participant_address == @owner {
+            found = true;
+            break;
+        }
+    };
+    assert!(found, "Participant should be added to the wager");
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    wager.contract_address,
+                    StrkWager::Event::WagerJoined(
+                        StrkWager::WagerJoinedEvent { wager_id, participant: owner }
+                    )
+                )
+            ]
+        );
+}
+

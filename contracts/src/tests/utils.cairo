@@ -58,7 +58,7 @@ pub fn deploy_wager() -> (IStrkWagerDispatcher, ContractAddress) {
     (dispatcher, contract_address)
 }
 
-pub fn create_wager(deposit: u256, stake: u256) {
+pub fn create_wager(deposit: u256, stake: u256) -> u64 {
     let (wager, wager_contract) = deploy_wager();
     let (escrow, strk_dispatcher) = deploy_escrow(wager_contract);
     let creator = OWNER();
@@ -92,4 +92,6 @@ pub fn create_wager(deposit: u256, stake: u256) {
     );
 
     spy.assert_emitted(@array![(wager_contract, expected_event)]);
+
+    wager_id
 }
