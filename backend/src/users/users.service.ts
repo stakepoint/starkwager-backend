@@ -60,4 +60,12 @@ export class UsersService {
 
     return updatedUser;
   }
+
+  async findOneByUsername(username: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+  }
 }

@@ -13,6 +13,7 @@ import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { CategoryModule } from './category/category.module';
 import { WagerModule } from './wager/wager.module';
 import { HashtagsModule } from './hashtags/hashtags.module';
+import { InvitationModule } from './wagerInvitations/wagerInvitations.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HashtagsModule } from './hashtags/hashtags.module';
     CategoryModule,
     WagerModule,
     HashtagsModule,
+    InvitationModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,

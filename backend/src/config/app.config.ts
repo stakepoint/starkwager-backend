@@ -9,4 +9,5 @@ export default registerAs('APP_CONFIG', () => ({
   refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRTY_TIME,
   nodeUrl: process.env.NODE_URL,
   chainId: process.env.CHAIN_ID,
+  invitationTokenExpiry: process.env.INVITATION_EXPIRY ?? '24h',
 }));
