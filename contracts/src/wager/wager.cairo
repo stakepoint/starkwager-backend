@@ -69,7 +69,16 @@ pub mod StrkWager {
         }
 
         //TODO
-        fn withdraw_from_wallet(ref self: ContractState, amount: u256) {}
+        fn withdraw_from_wallet(ref self: ContractState, amount: u256) {
+            assert(amount > 0, "amonut can not be 0");
+            let caller = get_caller_address;
+            assert(!caller.is_zero(), "Invalid address");
+            let escrow_address = self.escrow_address.read();
+            assert(!escrow_address.is_zero(), "Escrow not configured");
+            let escrow_dispatcher = IEscrowDispatcher {contract_address: ecsro};
+            escrow_dispatcher.withdraw_from_wallet(caller, amount); 
+
+        }
 
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
             let escrow_dispatcher = IEscrowDispatcher {
