@@ -123,7 +123,7 @@ pub mod StrkWager {
             wager_id
         }
 
-        //TODO
+
         fn join_wager(ref self: ContractState, wager_id: u64) {
             let wager = self.wagers.entry(wager_id).read();
             assert(!wager.resolved, 'Wager is already resolved');
