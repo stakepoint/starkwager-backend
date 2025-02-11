@@ -158,13 +158,13 @@ fn test_join_wager_success() {
     let stake = 100_u256;
     let wager_id = create_wager(stake, stake);
 
-    // Fund the wallet of the participant
+    // Approve tokens from OWNER for escrow
     let owner = OWNER();
     start_cheat_caller_address(strk_dispatcher.contract_address, owner);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // Set OWNER as caller for wager contract
+    // Fund the wallet of the participant
     start_cheat_caller_address(wager.contract_address, owner);
     wager.fund_wallet(stake);
     stop_cheat_caller_address(wager.contract_address);
@@ -195,5 +195,28 @@ fn test_join_wager_success() {
                 )
             ]
         );
+}
+
+
+#[test]
+#[should_panic(expected: ('Wager is already resolved',))]
+fn test_join_wager_resolved() {
+    let (wager, wager_address) = deploy_wager();
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
+
+    // Configure wager with escrow
+    wager.set_escrow_address(escrow.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(stake, stake);
+
+    // Resolve the wager
+    let owner = OWNER();
+    wager.resolve_wager(wager_id, owner);
+
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.join_wager(wager_id);
+    stop_cheat_caller_address(wager.contract_address);
 }
 

@@ -171,5 +171,15 @@ pub mod StrkWager {
 
             self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
         }
+
+        fn resolve_wager(ref self: ContractState, wager_id: u64, winner: ContractAddress) {
+            let mut wager = self.wagers.entry(wager_id).read();
+            assert(!wager.resolved, 'Wager is already resolved');
+
+            wager.resolved = true;
+            wager.winner = winner;
+
+            self.wagers.entry(wager_id).write(wager);
+        }
     }
 }
