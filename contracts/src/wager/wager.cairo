@@ -130,7 +130,7 @@ pub mod StrkWager {
 
             let caller = get_caller_address();
             let caller_balance = self.get_balance(caller);
-            assert!(caller_balance >= wager.stake, "Not enough balance to join wager");
+            assert!(caller_balance >= wager.stake, "Insuficient balance to join wager");
 
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
             self.wager_participants.entry(wager_id).entry(participant_id).write(caller);
