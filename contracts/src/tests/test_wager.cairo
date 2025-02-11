@@ -1,8 +1,7 @@
 use starknet::ContractAddress;
 use starknet::{testing, contract_address_const, get_caller_address};
-
 use contracts::wager::wager::StrkWager;
-
+use contracts::wager::types::{Category, Mode};
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
 use contracts::tests::utils::{deploy_wager, create_wager, deploy_mock_erc20, deploy_escrow, OWNER};

@@ -25,7 +25,8 @@ pub mod StrkWager {
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         EscrowAddressUpdated: EscrowAddressEvent,
-        WagerCreated: WagerCreatedEvent
+        WagerCreated: WagerCreatedEvent,
+        WagerJoined: WagerJoinedEvent
     }
 
     #[derive(Drop, starknet::Event)]
@@ -43,6 +44,12 @@ pub mod StrkWager {
         pub creator: ContractAddress,
         pub stake: u256,
         pub mode: Mode,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct WagerJoinedEvent {
+        pub wager_id: u64,
+        pub participant: ContractAddress,
     }
 
     #[constructor]
@@ -116,8 +123,21 @@ pub mod StrkWager {
             wager_id
         }
 
-        //TODO
-        fn join_wager(ref self: ContractState, wager_id: u64) {}
+
+        fn join_wager(ref self: ContractState, wager_id: u64) {
+            let wager = self.get_wager(wager_id);
+            assert(!wager.resolved, 'Wager is resolved');
+
+            let caller = get_caller_address();
+            let caller_balance = self.get_balance(caller);
+            assert!(caller_balance >= wager.stake, "Not enough balance to join wager");
+
+            let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
+            self.wager_participants.entry(wager_id).entry(participant_id).write(caller);
+            self.wager_participants_count.entry(wager_id).write(participant_id);
+
+            self.emit(WagerJoinedEvent { wager_id, participant: caller });
+        }
 
         //TODO
         fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
