@@ -220,3 +220,24 @@ fn test_join_wager_resolved() {
     stop_cheat_caller_address(wager.contract_address);
 }
 
+
+#[test]
+#[should_panic(expected: 'Insufficient balance')]
+fn test_join_wager_insufficient_balance() {
+    // Deploy contracts
+    let (wager, wager_address) = deploy_wager();
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
+
+    // Configure wager with escrow
+    wager.set_escrow_address(escrow.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let deposit = 50_u256;
+    let wager_id = create_wager(deposit, stake);
+
+    let owner = OWNER();
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.join_wager(wager_id);
+    stop_cheat_caller_address(wager.contract_address);
+}
