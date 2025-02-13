@@ -16,7 +16,7 @@ import { JwtModule } from '@nestjs/jwt';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('APP_CONFIG.secret'),
         signOptions: {
-          expiresIn: configService.get('APP_CONFIG.invitationTokenExpiry'),
+          expiresIn: configService.get('APP_CONFIG.accessTokenExpiry'),
         },
         global: true,
       }),
