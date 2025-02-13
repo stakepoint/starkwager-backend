@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  HttpException,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import {
@@ -14,11 +9,8 @@ import {
 } from 'starknet';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigType } from '@nestjs/config';
-
 import { AppConfig } from '../config';
 import { User } from '@prisma/client';
-import { UserTokenDto } from './dto/token.dto';
-import { StarknetHttpCodesEnum } from 'src/common/enums/httpCodes.enum';
 
 @Injectable()
 export class AuthService {
