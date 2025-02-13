@@ -44,6 +44,7 @@ export class CreateInvitationGuard implements CanActivate {
     const invitedUser = await this.userService.findOneByUsername(
       dto.invitedUsername,
     );
+
     if (!invitedUser) {
       throw new NotFoundException('Invited user not found');
     }

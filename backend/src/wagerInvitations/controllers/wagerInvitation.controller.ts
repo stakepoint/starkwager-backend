@@ -53,6 +53,7 @@ export class WagerInvitationController {
       { invitationId: invitation.id },
       {
         expiresIn: this.appConfig.invitationTokenExpiry,
+        secret: this.appConfig.secret,
       },
     );
 
