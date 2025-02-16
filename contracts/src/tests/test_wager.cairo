@@ -5,13 +5,27 @@ use contracts::wager::wager::StrkWager;
 
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
-use contracts::tests::utils::{deploy_wager, create_wager, deploy_mock_erc20, deploy_escrow, OWNER};
+use contracts::tests::utils::{
+    deploy_wager, create_wager, deploy_mock_erc20, deploy_escrow, OWNER, ADMIN
+};
 use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
     stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
 };
+
+
+#[test]
+#[should_panic(expected: 'Caller is missing role')]
+fn test_set_escrow_address_fail() {
+    let admin_address = ADMIN();
+    let new_address = contract_address_const::<'new_address'>();
+    let (wager, contract_address) = deploy_wager(admin_address);
+    start_cheat_caller_address(contract_address, new_address);
+    wager.set_escrow_address(new_address);
+    stop_cheat_caller_address(contract_address);
+}
 
 #[test]
 fn test_set_escrow_address() {
