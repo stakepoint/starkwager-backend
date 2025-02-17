@@ -44,6 +44,7 @@ pub mod StrkWager {
     pub enum Event {
         EscrowAddressUpdated: EscrowAddressEvent,
         WagerCreated: WagerCreatedEvent,
+        WagerJoined: WagerJoinedEvent,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
         #[flat]
@@ -65,6 +66,12 @@ pub mod StrkWager {
         pub creator: ContractAddress,
         pub stake: u256,
         pub mode: Mode,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct WagerJoinedEvent {
+        pub wager_id: u64,
+        pub participant: ContractAddress,
     }
 
     const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE"); // Unique identifier for the role
@@ -144,8 +151,21 @@ pub mod StrkWager {
             wager_id
         }
 
-        //TODO
-        fn join_wager(ref self: ContractState, wager_id: u64) {}
+
+        fn join_wager(ref self: ContractState, wager_id: u64) {
+            let wager = self.wagers.entry(wager_id).read();
+            assert(!wager.resolved, 'Wager is already resolved');
+
+            let caller = get_caller_address();
+            let caller_balance = self.get_balance(caller);
+            assert(caller_balance >= wager.stake, 'Insufficient balance');
+
+            let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
+            self.wager_participants.entry(wager_id).entry(participant_id).write(caller);
+            self.wager_participants_count.entry(wager_id).write(participant_id);
+
+            self.emit(WagerJoinedEvent { wager_id, participant: caller });
+        }
 
         //TODO
         fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
@@ -153,9 +173,19 @@ pub mod StrkWager {
             self.wagers.entry(wager_id).read()
         }
 
-        //TODO
+
         fn get_wager_participants(self: @ContractState, wager_id: u64) -> Span<ContractAddress> {
-            array![].span()
+            let participant_count = self.wager_participants_count.entry(wager_id).read();
+            let mut participants = array![];
+            let mut i = 1;
+
+            while i <= participant_count {
+                let participant = self.wager_participants.entry(wager_id).entry(i).read();
+                participants.append(participant);
+                i += 1;
+            };
+
+            participants.span()
         }
 
         fn get_escrow_address(self: @ContractState) -> ContractAddress {
@@ -169,6 +199,16 @@ pub mod StrkWager {
             self.escrow_address.write(new_address);
 
             self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
+        }
+
+        fn resolve_wager(ref self: ContractState, wager_id: u64, winner: ContractAddress) {
+            let mut wager = self.wagers.entry(wager_id).read();
+            assert(!wager.resolved, 'Wager is already resolved');
+
+            wager.resolved = true;
+            wager.winner = winner;
+
+            self.wagers.entry(wager_id).write(wager);
         }
     }
 }
