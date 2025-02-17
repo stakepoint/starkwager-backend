@@ -81,7 +81,6 @@ pub mod Escrow {
 
     #[abi(embed_v0)]
     impl EscrowImpl of IEscrow<ContractState> {
-        //TODO: Add access control and restrict to wager contract
         fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
 
@@ -97,7 +96,6 @@ pub mod Escrow {
             self.emit(DepositEvent { from, amount });
         }
 
-        //TODO: restrict to wager contract
         fn withdraw_from_wallet(ref self: ContractState, to: ContractAddress, amount: u256) {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
             let strk_dispatcher = self.strk_dispatcher.read();
@@ -116,7 +114,6 @@ pub mod Escrow {
             self.emit(WithdrawEvent { to, amount });
         }
 
-        //TODO: restrict to wager contract
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
             self.user_balance.entry(address).read()

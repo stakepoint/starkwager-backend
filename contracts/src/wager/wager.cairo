@@ -106,7 +106,6 @@ pub mod StrkWager {
             escrow_dispatcher.get_balance(address)
         }
 
-        //TODO
         fn create_wager(
             ref self: ContractState,
             category: Category,
@@ -147,9 +146,7 @@ pub mod StrkWager {
         //TODO
         fn join_wager(ref self: ContractState, wager_id: u64) {}
 
-        //TODO
         fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
-            // search the storage for the `wager_id`.
             self.wagers.entry(wager_id).read()
         }
 
