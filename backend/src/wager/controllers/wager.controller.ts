@@ -6,10 +6,12 @@ import {
   Param,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { WagerService } from '../services/wager.service';
 import { CreateWagerDto } from '../dtos/wager.dto';
 import { CreateWagerGuard } from '../guards/wager.guard';
+import { ApiQuery } from '@nestjs/swagger';
 
 @Controller('wager')
 export class WagerController {
@@ -22,9 +24,10 @@ export class WagerController {
     return this.wagerService.createWager({ ...data, createdById: userId });
   }
 
+  @ApiQuery({ name: 'status', required: true, enum: ['pending', 'completed', 'active'] })
   @Get('all')
-  findAll() {
-    return this.wagerService.getAllWagers();
+  findAll(@Query('status') status: string) {
+    return this.wagerService.getAllWagers(status);
   }
 
   @Get('view/:id')

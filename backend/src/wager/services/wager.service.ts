@@ -10,8 +10,8 @@ export class WagerService {
     return await this.prisma.wager.create({ data });
   }
 
-  async getAllWagers() {
-    return await this.prisma.wager.findMany();
+  async getAllWagers(status: string) {
+    return await this.prisma.wager.findMany({where: {status}});
   }
 
   async findOneById(id: string) {
