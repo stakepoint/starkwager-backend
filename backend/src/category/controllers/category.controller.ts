@@ -9,7 +9,7 @@ export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Post('create')
-  @Roles(Role.Admin)
+  // @Roles(Role.Admin)
   create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoryService.create(createCategoryDto);
   }

@@ -5,7 +5,15 @@ import {
   IsNumber,
   IsPositive,
   IsIn,
+  IsEnum,
 } from 'class-validator';
+
+enum WagerStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+}
+export default WagerStatus;
 
 export class CreateWagerDto {
   @IsString()
@@ -27,7 +35,7 @@ export class CreateWagerDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(['pending', 'active', 'completed']) // Restrict allowed values
+  @IsEnum(WagerStatus)
   @IsOptional() 
   status?: string;
 
