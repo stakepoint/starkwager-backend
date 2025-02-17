@@ -38,10 +38,10 @@ model Wager {
   // Relationships
   category   Category @relation(fields: [categoryId], references: [id])
   createdBy  User     @relation(fields: [createdById], references: [id])
+  invitations Invitation[]
 
   @@map("wagers")
 }
-
 
 model User {
   id         String   @id @default(uuid())
@@ -54,6 +54,8 @@ model User {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   wagers      Wager[]
+  sentInvitations Invitation[] @relation("SentInvitations")
+  receivedInvitations Invitation[] @relation("ReceivedInvitations")
 
   @@map("users")
 }
@@ -70,4 +72,21 @@ model Hashtag {
   updatedAt DateTime @default(now()) @map("updated_at")
   
   @@map("hashtags")
+}
+
+model Invitation {
+  id              String   @id @default(uuid())
+  wagerId         String   @map("wager_id")
+  invitedById     String   @map("invited_by_id")
+  invitedUsername String   @map("invited_username") @db.Citext
+  status          String   @default("pending") 
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relationships
+  wager      Wager @relation(fields: [wagerId], references: [id])
+  invitedBy  User  @relation(fields: [invitedById], references: [id], name: "SentInvitations")
+  invitedUser User @relation(fields: [invitedUsername], references: [username], name: "ReceivedInvitations")
+
+  @@map("invitations")
 }

@@ -17,6 +17,10 @@ pub fn OWNER() -> ContractAddress {
     'owner'.try_into().unwrap()
 }
 
+pub fn ADMIN() -> ContractAddress {
+    'admin'.try_into().unwrap()
+}
+
 pub fn WAGER_ADDRESS() -> ContractAddress {
     'wager'.try_into().unwrap()
 }
@@ -48,9 +52,10 @@ pub fn deploy_escrow(wager_address: ContractAddress) -> (IEscrowDispatcher, IERC
     (IEscrowDispatcher { contract_address }, strk_dispatcher)
 }
 
-pub fn deploy_wager() -> (IStrkWagerDispatcher, ContractAddress) {
+pub fn deploy_wager(admin_address: ContractAddress) -> (IStrkWagerDispatcher, ContractAddress) {
     let contract = declare("StrkWager").unwrap().contract_class();
     let mut calldata = array![];
+    admin_address.serialize(ref calldata);
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     let dispatcher = IStrkWagerDispatcher { contract_address };
@@ -58,13 +63,15 @@ pub fn deploy_wager() -> (IStrkWagerDispatcher, ContractAddress) {
     (dispatcher, contract_address)
 }
 
-pub fn create_wager(deposit: u256, stake: u256) -> u64 {
-    let (wager, wager_contract) = deploy_wager();
+pub fn create_wager(deposit: u256, stake: u256, admin_address: ContractAddress) -> u64 {
+    let (wager, wager_contract) = deploy_wager(admin_address);
     let (escrow, strk_dispatcher) = deploy_escrow(wager_contract);
     let creator = OWNER();
     let mut spy = spy_events();
 
+    start_cheat_caller_address(wager.contract_address, admin_address);
     wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
 
     cheat_caller_address(strk_dispatcher.contract_address, creator, CheatSpan::TargetCalls(1));
     strk_dispatcher.approve(escrow.contract_address, deposit);
