@@ -4,6 +4,7 @@ import {
   IsString,
   IsNumber,
   IsPositive,
+  IsIn,
 } from 'class-validator';
 
 export class CreateWagerDto {
@@ -23,6 +24,12 @@ export class CreateWagerDto {
   @IsPositive()
   @IsNotEmpty()
   stakeAmount: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['pending', 'active', 'completed']) // Restrict allowed values
+  @IsOptional() 
+  status?: string;
 
   @IsString()
   @IsOptional()
