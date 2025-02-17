@@ -222,7 +222,7 @@ fn test_join_wager_resolved() {
 
 
 #[test]
-#[should_panic(expected: 'Insufficient balance')]
+#[should_panic(expected: 'Insufficient balance to join wager')]
 fn test_join_wager_insufficient_balance() {
     // Deploy contracts
     let (wager, wager_address) = deploy_wager();
