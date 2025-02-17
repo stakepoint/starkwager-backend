@@ -11,6 +11,20 @@ pub mod StrkWager {
 
     use contracts::wager::interface::IStrkWager;
     use contracts::wager::types::{Wager, Category, Mode};
+    use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin_access::accesscontrol::{AccessControlComponent};
+
+    component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[abi(embed_v0)]
+    impl AccessControlImpl =
+        AccessControlComponent::AccessControlImpl<ContractState>;
+
+    impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -19,13 +33,21 @@ pub mod StrkWager {
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
+        #[substorage(v0)]
+        accesscontrol: AccessControlComponent::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         EscrowAddressUpdated: EscrowAddressEvent,
-        WagerCreated: WagerCreatedEvent
+        WagerCreated: WagerCreatedEvent,
+        #[flat]
+        AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -45,8 +67,14 @@ pub mod StrkWager {
         pub mode: Mode,
     }
 
+    const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE"); // Unique identifier for the role
+
+
     #[constructor]
-    fn constructor(ref self: ContractState) {}
+    fn constructor(ref self: ContractState, admin_contract: ContractAddress) {
+        self.accesscontrol.initializer();
+        self.accesscontrol._grant_role(ADMIN_ROLE, admin_contract);
+    }
 
     #[abi(embed_v0)]
     impl StrkWagerImpl of IStrkWager<ContractState> {
@@ -134,6 +162,7 @@ pub mod StrkWager {
             self.escrow_address.read()
         }
         fn set_escrow_address(ref self: ContractState, new_address: ContractAddress) {
+            self.accesscontrol.assert_only_role(ADMIN_ROLE);
             assert(!new_address.is_zero(), 'Invalid address');
 
             let old_address = self.escrow_address.read();
