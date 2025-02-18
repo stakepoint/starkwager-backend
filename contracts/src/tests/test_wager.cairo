@@ -300,19 +300,17 @@ fn test_join_wager_resolved() {
 
 #[test]
 fn test_get_wager() {
-    let admin_address = ADMIN();
-    let (wager, wager_address) = deploy_wager(admin_address);
-    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
+    let (wager, escrow, strk_dispatcher) = setup();
 
     // Configure wager with escrow
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
     // Create a wager
     let stake = 1000_u256;
     let deposit = 2000_u256;
-    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake, admin_address);
+    let wager_id = create_wager(deposit, stake);
 
     let retrieved_wager = wager.get_wager(wager_id);
 
