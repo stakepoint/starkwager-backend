@@ -63,13 +63,20 @@ pub fn deploy_wager(admin_address: ContractAddress) -> (IStrkWagerDispatcher, Co
     (dispatcher, contract_address)
 }
 
-pub fn create_wager(deposit: u256, stake: u256, admin_address: ContractAddress) {
-    let (wager, wager_contract) = deploy_wager(admin_address);
+pub fn setup() -> (IStrkWagerDispatcher, IEscrowDispatcher, IERC20Dispatcher) {
+    let (wager, wager_contract) = deploy_wager(ADMIN());
     let (escrow, strk_dispatcher) = deploy_escrow(wager_contract);
+
+    (wager, escrow, strk_dispatcher)
+}
+
+pub fn create_wager(deposit: u256, stake: u256) {
+    let (wager, escrow, strk_dispatcher) = setup();
+
     let creator = OWNER();
     let mut spy = spy_events();
 
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
@@ -77,7 +84,9 @@ pub fn create_wager(deposit: u256, stake: u256, admin_address: ContractAddress) 
     strk_dispatcher.approve(escrow.contract_address, deposit);
     stop_cheat_block_timestamp(strk_dispatcher.contract_address);
 
-    start_cheat_caller_address(escrow.contract_address, wager_contract); // Simulate Wager Contract
+    start_cheat_caller_address(
+        escrow.contract_address, wager.contract_address
+    ); // Simulate Wager Contract
     escrow.deposit_to_wallet(creator, deposit);
 
     assert(strk_dispatcher.balance_of(escrow.contract_address) == deposit, 'wrong amount');
@@ -89,11 +98,11 @@ pub fn create_wager(deposit: u256, stake: u256, admin_address: ContractAddress) 
     let category = Category::Sports;
     let mode = Mode::HeadToHead;
 
-    cheat_caller_address(wager_contract, creator, CheatSpan::TargetCalls(1));
+    cheat_caller_address(wager.contract_address, creator, CheatSpan::TargetCalls(1));
     let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode);
     let expected_event = StrkWager::Event::WagerCreated(
         StrkWager::WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode },
     );
 
-    spy.assert_emitted(@array![(wager_contract, expected_event)]);
+    spy.assert_emitted(@array![(wager.contract_address, expected_event)]);
 }

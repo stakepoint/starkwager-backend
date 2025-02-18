@@ -6,7 +6,7 @@ use contracts::wager::wager::StrkWager;
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
 use contracts::tests::utils::{
-    deploy_wager, create_wager, deploy_mock_erc20, deploy_escrow, OWNER, ADMIN
+    deploy_wager, create_wager, deploy_mock_erc20, deploy_escrow, OWNER, ADMIN, setup
 };
 use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
 
@@ -19,29 +19,29 @@ use snforge_std::{
 #[test]
 #[should_panic(expected: 'Caller is missing role')]
 fn test_set_escrow_address_fail() {
-    let admin_address = ADMIN();
+    let (wager, escrow, strk_dispatcher) = setup();
+
     let new_address = contract_address_const::<'new_address'>();
-    let (wager, contract_address) = deploy_wager(admin_address);
-    start_cheat_caller_address(contract_address, new_address);
+    start_cheat_caller_address(wager.contract_address, new_address);
     wager.set_escrow_address(new_address);
-    stop_cheat_caller_address(contract_address);
+    stop_cheat_caller_address(wager.contract_address);
 }
 
 #[test]
 fn test_set_escrow_address() {
-    let admin_address = ADMIN();
-    let (wager, contract_address) = deploy_wager(admin_address);
+    let (wager, escrow, strk_dispatcher) = setup();
+
     let mut spy = spy_events();
 
     let new_address = contract_address_const::<'new_address'>();
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(new_address);
     stop_cheat_caller_address(wager.contract_address);
     spy
         .assert_emitted(
             @array![
                 (
-                    contract_address,
+                    wager.contract_address,
                     StrkWager::Event::EscrowAddressUpdated(
                         StrkWager::EscrowAddressEvent {
                             old_address: contract_address_const::<
@@ -62,22 +62,22 @@ fn test_set_escrow_address() {
 #[test]
 #[should_panic(expected: ('Invalid address',))]
 fn test_set_escrow_address_zero_address_fails() {
-    let admin_address = ADMIN();
-    let (wager, _) = deploy_wager(admin_address);
+    let (wager, escrow, strk_dispatcher) = setup();
+
     let zero_address: ContractAddress = contract_address_const::<0>();
 
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(zero_address);
     stop_cheat_caller_address(wager.contract_address);
 }
 
 #[test]
 fn test_get_escrow_address() {
-    let admin_address = ADMIN();
-    let (wager, _) = deploy_wager(admin_address);
+    let (wager, escrow, strk_dispatcher) = setup();
+
     let first_address = contract_address_const::<'new_address'>();
 
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(first_address);
     stop_cheat_caller_address(wager.contract_address);
     let initial_address: ContractAddress = wager.get_escrow_address();
@@ -86,7 +86,7 @@ fn test_get_escrow_address() {
     assert!(initial_address == first_address, "Initial escrow address is not being returned");
 
     let second_address = contract_address_const::<'second_address'>();
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(second_address);
     stop_cheat_caller_address(wager.contract_address);
     let final_address: ContractAddress = wager.get_escrow_address();
@@ -97,25 +97,22 @@ fn test_get_escrow_address() {
 
 #[test]
 fn test_create_wager_success() {
-    let admin_address = ADMIN();
-    create_wager(3000, 2000, admin_address);
+    create_wager(3000, 2000);
 }
 
 #[test]
 #[should_panic(expected: 'Insufficient balance')]
 fn test_create_wager_insufficient_balance() {
-    let admin_address = ADMIN();
-    create_wager(2000, 2200, admin_address);
+    create_wager(2000, 2200);
 }
 
 #[test]
 fn test_fund_wallet_success() {
     // Deploy contracts
-    let admin_address = ADMIN();
-    let (wager, wager_address) = deploy_wager(admin_address);
-    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
+    let (wager, escrow, strk_dispatcher) = setup();
+
     // Configure wager with escrow
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
     let amount = 50_u256;
@@ -135,8 +132,7 @@ fn test_fund_wallet_success() {
 #[should_panic(expected: ('Escrow not configured',))]
 fn test_fund_wallet_no_escrow() {
     // Deploy wager without setting escrow
-    let admin_address = ADMIN();
-    let (wager, _) = deploy_wager(admin_address);
+    let (wager, escrow, strk_dispatcher) = setup();
 
     // Try to fund wallet without escrow configured
     wager.fund_wallet(100_u256);
@@ -145,14 +141,13 @@ fn test_fund_wallet_no_escrow() {
 #[test]
 #[should_panic(expected: ('Amount must be positive',))]
 fn test_fund_wallet_zero_amount() {
-    let admin_address = ADMIN();
-    let (wager, wager_address) = deploy_wager(admin_address);
+    let (wager, escrow, strk_dispatcher) = setup();
 
     // Deploy escrow - using the correct signature without arguments
-    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
+    // let (escrow, strk_dispatcher) = deploy_escrow();
 
     // Set escrow address
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
@@ -163,11 +158,9 @@ fn test_fund_wallet_zero_amount() {
 #[test]
 #[should_panic(expected: ('ERC20: insufficient allowance',))]
 fn test_fund_wallet_without_approval() {
-    let admin_address = ADMIN();
-    let (wager, wager_address) = deploy_wager(admin_address);
-    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
+    let (wager, escrow, strk_dispatcher) = setup();
 
-    start_cheat_caller_address(wager.contract_address, admin_address);
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
