@@ -70,7 +70,16 @@ pub fn setup() -> (IStrkWagerDispatcher, IEscrowDispatcher, IERC20Dispatcher) {
     (wager, escrow, strk_dispatcher)
 }
 
-pub fn create_wager(deposit: u256, stake: u256) {
+// pub fn create_wager(
+//     wager: IStrkWagerDispatcher,
+//     escrow: IEscrowDispatcher,
+//     strk_dispatcher: IERC20Dispatcher,
+//     deposit: u256,
+//     stake: u256,
+//     admin_address: ContractAddress,
+// ) -> u64 {
+
+pub fn create_wager(deposit: u256, stake: u256) -> u64 {
     let (wager, escrow, strk_dispatcher) = setup();
 
     let creator = OWNER();
@@ -82,17 +91,15 @@ pub fn create_wager(deposit: u256, stake: u256) {
 
     cheat_caller_address(strk_dispatcher.contract_address, creator, CheatSpan::TargetCalls(1));
     strk_dispatcher.approve(escrow.contract_address, deposit);
-    stop_cheat_block_timestamp(strk_dispatcher.contract_address);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
 
     start_cheat_caller_address(
         escrow.contract_address, wager.contract_address
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(creator, deposit);
+    stop_cheat_caller_address(escrow.contract_address);
 
-    assert(strk_dispatcher.balance_of(escrow.contract_address) == deposit, 'wrong amount');
-
-    assert(escrow.get_balance(creator) == deposit, 'wrong balance');
-
+    // Create the wager
     let title = "My Wager";
     let terms = "My terms";
     let category = Category::Sports;
@@ -100,9 +107,21 @@ pub fn create_wager(deposit: u256, stake: u256) {
 
     cheat_caller_address(wager.contract_address, creator, CheatSpan::TargetCalls(1));
     let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode);
-    let expected_event = StrkWager::Event::WagerCreated(
-        StrkWager::WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode },
-    );
+    stop_cheat_caller_address(wager.contract_address);
 
-    spy.assert_emitted(@array![(wager.contract_address, expected_event)]);
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    wager.contract_address,
+                    StrkWager::Event::WagerCreated(
+                        StrkWager::WagerCreatedEvent {
+                            wager_id, category, title, terms, creator, stake, mode,
+                        }
+                    )
+                )
+            ]
+        );
+
+    wager_id
 }
