@@ -12,7 +12,42 @@ use snforge_std::{
 };
 
 #[test]
-fn test_deposit_to_wallet() {
+#[should_panic(expected: ('Caller is missing role',))]
+fn test_deposit_to_wallet_unauthorized() {
+    let (escrow, strk_dispatcher) = deploy_escrow(WAGER_ADDRESS());
+
+    let amount = 50_u256;
+
+    // Approve escrow to spend
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.approve(escrow.contract_address, amount);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Attempt to deposit to wallet from an unauthorized address (BOB)
+    start_cheat_caller_address(escrow.contract_address, BOB()); // Simulate unauthorized caller
+    escrow.deposit_to_wallet(OWNER(), amount);
+}
+
+#[test]
+#[should_panic(expected: ('Insufficient balance',))]
+fn test_deposit_to_wallet_insufficient_balance() {
+    let (escrow, strk_dispatcher) = deploy_escrow(WAGER_ADDRESS());
+
+    let amount = 50_u256;
+
+    // Approve escrow to spend
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.approve(escrow.contract_address, amount);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
+    start_cheat_caller_address(escrow.contract_address, WAGER_ADDRESS()); // Simulate Wager Contract
+    escrow.deposit_to_wallet(BOB(), amount);
+    stop_cheat_caller_address(escrow.contract_address);
+}
+
+#[test]
+fn test_deposit_to_wallet_ok() {
     let (escrow, strk_dispatcher) = deploy_escrow(WAGER_ADDRESS());
 
     let amount = 50_u256;
@@ -31,23 +66,6 @@ fn test_deposit_to_wallet() {
     start_cheat_caller_address(escrow.contract_address, WAGER_ADDRESS());
     assert(escrow.get_balance(OWNER()) == amount, 'wrong balance');
     stop_cheat_caller_address(escrow.contract_address);
-}
-
-#[test]
-#[should_panic(expected: ('Caller is missing role',))]
-fn test_deposit_to_wallet_unauthorized() {
-    let (escrow, strk_dispatcher) = deploy_escrow(WAGER_ADDRESS());
-
-    let amount = 50_u256;
-
-    // Approve escrow to spend
-    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
-    strk_dispatcher.approve(escrow.contract_address, amount);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Attempt to deposit to wallet from an unauthorized address (BOB)
-    start_cheat_caller_address(escrow.contract_address, BOB()); // Simulate unauthorized caller
-    escrow.deposit_to_wallet(OWNER(), amount);
 }
 
 #[test]

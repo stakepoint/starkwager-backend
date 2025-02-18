@@ -168,4 +168,15 @@ pub mod StrkWager {
             self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
         }
     }
+
+    #[generate_trait]
+    pub impl InternalFunctions of InternalFunctionsTrait {
+        //TODO
+        fn _check_balance(self: @ContractState) -> bool {
+            true
+        }
+
+        //TODO
+        fn _fund_wager(self: @ContractState, wager_id: u64, amount: u256) {}
+    }
 }

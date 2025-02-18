@@ -89,9 +89,6 @@ pub fn create_wager(deposit: u256, stake: u256, admin_address: ContractAddress) 
     let category = Category::Sports;
     let mode = Mode::HeadToHead;
 
-    println!("Creator's balance: {}", escrow.get_balance(creator));
-    println!("Creator's stake: {}", stake);
-
     cheat_caller_address(wager_contract, creator, CheatSpan::TargetCalls(1));
     let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode);
     let expected_event = StrkWager::Event::WagerCreated(
