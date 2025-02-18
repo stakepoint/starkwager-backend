@@ -70,24 +70,15 @@ pub fn setup() -> (IStrkWagerDispatcher, IEscrowDispatcher, IERC20Dispatcher) {
     (wager, escrow, strk_dispatcher)
 }
 
-// pub fn create_wager(
-//     wager: IStrkWagerDispatcher,
-//     escrow: IEscrowDispatcher,
-//     strk_dispatcher: IERC20Dispatcher,
-//     deposit: u256,
-//     stake: u256,
-//     admin_address: ContractAddress,
-// ) -> u64 {
-
-pub fn create_wager(deposit: u256, stake: u256) -> u64 {
-    let (wager, escrow, strk_dispatcher) = setup();
-
+pub fn create_wager(
+    wager: IStrkWagerDispatcher,
+    escrow: IEscrowDispatcher,
+    strk_dispatcher: IERC20Dispatcher,
+    deposit: u256,
+    stake: u256,
+) -> u64 {
     let creator = OWNER();
     let mut spy = spy_events();
-
-    start_cheat_caller_address(wager.contract_address, ADMIN());
-    wager.set_escrow_address(escrow.contract_address);
-    stop_cheat_caller_address(wager.contract_address);
 
     cheat_caller_address(strk_dispatcher.contract_address, creator, CheatSpan::TargetCalls(1));
     strk_dispatcher.approve(escrow.contract_address, deposit);

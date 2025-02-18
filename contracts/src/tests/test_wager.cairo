@@ -104,7 +104,7 @@ fn test_create_wager_success() {
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-    create_wager(3000, 2000);
+    create_wager(wager, escrow, strk_dispatcher, 3000, 2000);
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn test_create_wager_insufficient_balance() {
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
-    create_wager(2000, 2200);
+    create_wager(wager, escrow, strk_dispatcher, 2000, 2200);
 }
 
 #[test]
@@ -196,7 +196,7 @@ fn test_join_wager_success() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_wager(stake, stake);
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
 
     // Approve tokens from OWNER for escrow
     let owner = OWNER();
@@ -252,7 +252,7 @@ fn test_join_wager_insufficient_balance() {
     // Create a wager
     let stake = 100_u256;
     let deposit = 20_u256; // Insufficient deposit
-    let wager_id = create_wager(stake, stake);
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
 
     // Mint tokens for BOB
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
@@ -286,7 +286,7 @@ fn test_join_wager_resolved() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_wager(stake, stake);
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
 
     // Resolve the wager
     let owner = OWNER();
@@ -310,7 +310,7 @@ fn test_get_wager() {
     // Create a wager
     let stake = 1000_u256;
     let deposit = 2000_u256;
-    let wager_id = create_wager(deposit, stake);
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
 
     let retrieved_wager = wager.get_wager(wager_id);
 
