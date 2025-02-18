@@ -315,3 +315,32 @@ fn test_join_wager_resolved() {
     wager.join_wager(wager_id);
     stop_cheat_caller_address(wager.contract_address);
 }
+
+
+#[test]
+fn test_get_wager() {
+    let admin_address = ADMIN();
+    let (wager, wager_address) = deploy_wager(admin_address);
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_address);
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, admin_address);
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 1000_u256;
+    let deposit = 2000_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake, admin_address);
+
+    let retrieved_wager = wager.get_wager(wager_id);
+
+    assert!(retrieved_wager.wager_id == wager_id, "Incorrect wager ID");
+    assert!(retrieved_wager.category == Category::Sports, "Incorrect category");
+    assert!(retrieved_wager.title == "My Wager", "Incorrect title");
+    assert!(retrieved_wager.terms == "My terms", "Incorrect terms");
+    assert!(retrieved_wager.creator == OWNER(), "Incorrect creator");
+    assert!(retrieved_wager.stake == stake, "Incorrect stake");
+    assert!(!retrieved_wager.resolved, "Wager should not be resolved");
+    assert!(retrieved_wager.mode == Mode::HeadToHead, "Incorrect mode");
+}
