@@ -29,7 +29,7 @@ pub mod StrkWager {
     #[storage]
     struct Storage {
         wager_count: u64,
-        wagers: Map<u64, Wager>,
+        wagers: Map<u64, Wager>, // wager_id -> Wager
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
@@ -113,7 +113,6 @@ pub mod StrkWager {
             escrow_dispatcher.get_balance(address)
         }
 
-        //TODO
         fn create_wager(
             ref self: ContractState,
             category: Category,
@@ -153,7 +152,9 @@ pub mod StrkWager {
 
 
         fn join_wager(ref self: ContractState, wager_id: u64) {
-            let wager = self.wagers.entry(wager_id).read();
+            let wager = self.get_wager(wager_id);
+
+            assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(!wager.resolved, 'Wager is already resolved');
 
             let caller = get_caller_address();
@@ -167,9 +168,7 @@ pub mod StrkWager {
             self.emit(WagerJoinedEvent { wager_id, participant: caller });
         }
 
-        //TODO
         fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
-            // search the storage for the `wager_id`.
             self.wagers.entry(wager_id).read()
         }
 
@@ -201,6 +200,7 @@ pub mod StrkWager {
             self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
         }
 
+        //TODO
         fn resolve_wager(ref self: ContractState, wager_id: u64, winner: ContractAddress) {
             let mut wager = self.wagers.entry(wager_id).read();
             assert(!wager.resolved, 'Wager is already resolved');
@@ -210,5 +210,16 @@ pub mod StrkWager {
 
             self.wagers.entry(wager_id).write(wager);
         }
+    }
+
+    #[generate_trait]
+    pub impl InternalFunctions of InternalFunctionsTrait {
+        //TODO
+        fn _check_balance(self: @ContractState) -> bool {
+            true
+        }
+
+        //TODO
+        fn _fund_wager(self: @ContractState, wager_id: u64, amount: u256) {}
     }
 }

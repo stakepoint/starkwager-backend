@@ -34,6 +34,7 @@ pub mod Escrow {
     struct Storage {
         strk_dispatcher: IERC20Dispatcher,
         user_balance: Map::<ContractAddress, u256>,
+        wager_stake: Map::<u64, u256>, // wager_id -> total stake
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
@@ -81,7 +82,6 @@ pub mod Escrow {
 
     #[abi(embed_v0)]
     impl EscrowImpl of IEscrow<ContractState> {
-        //TODO: Add access control and restrict to wager contract
         fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
 
@@ -92,12 +92,12 @@ pub mod Escrow {
             let strk_dispatcher = self.strk_dispatcher.read();
 
             // transfers funds to escrow
-            strk_dispatcher.transfer_from(from, get_contract_address(), amount);
+            assert(strk_dispatcher.balance_of(from) >= amount, 'Insufficient balance');
             self.user_balance.entry(from).write(amount + self.get_balance(from));
+            strk_dispatcher.transfer_from(from, get_contract_address(), amount);
             self.emit(DepositEvent { from, amount });
         }
 
-        //TODO: restrict to wager contract
         fn withdraw_from_wallet(ref self: ContractState, to: ContractAddress, amount: u256) {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
             let strk_dispatcher = self.strk_dispatcher.read();
@@ -116,11 +116,12 @@ pub mod Escrow {
             self.emit(WithdrawEvent { to, amount });
         }
 
-        //TODO: restrict to wager contract
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
             self.user_balance.entry(address).read()
         }
-        //TODO: stake amount?
+
+        //TODO
+        fn fund_wager(self: @ContractState, wager_id: u64, amount: u256) {}
     }
 }

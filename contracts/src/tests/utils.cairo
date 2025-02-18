@@ -63,6 +63,12 @@ pub fn deploy_wager(admin_address: ContractAddress) -> (IStrkWagerDispatcher, Co
     (dispatcher, contract_address)
 }
 
+pub fn setup() -> (IStrkWagerDispatcher, IEscrowDispatcher, IERC20Dispatcher) {
+    let (wager, wager_contract) = deploy_wager(ADMIN());
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_contract);
+
+    (wager, escrow, strk_dispatcher)
+}
 
 pub fn create_wager(
     wager: IStrkWagerDispatcher,
@@ -70,18 +76,17 @@ pub fn create_wager(
     strk_dispatcher: IERC20Dispatcher,
     deposit: u256,
     stake: u256,
-    admin_address: ContractAddress,
 ) -> u64 {
     let creator = OWNER();
     let mut spy = spy_events();
 
-    // Approve and deposit into escrow for the creator
-    start_cheat_caller_address(strk_dispatcher.contract_address, creator);
+    cheat_caller_address(strk_dispatcher.contract_address, creator, CheatSpan::TargetCalls(1));
     strk_dispatcher.approve(escrow.contract_address, deposit);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // Simulate Wager Contract to deposit funds
-    start_cheat_caller_address(escrow.contract_address, wager.contract_address);
+    start_cheat_caller_address(
+        escrow.contract_address, wager.contract_address
+    ); // Simulate Wager Contract
     escrow.deposit_to_wallet(creator, deposit);
     stop_cheat_caller_address(escrow.contract_address);
 
@@ -91,7 +96,7 @@ pub fn create_wager(
     let category = Category::Sports;
     let mode = Mode::HeadToHead;
 
-    start_cheat_caller_address(wager.contract_address, creator);
+    cheat_caller_address(wager.contract_address, creator, CheatSpan::TargetCalls(1));
     let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode);
     stop_cheat_caller_address(wager.contract_address);
 
