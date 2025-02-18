@@ -29,7 +29,7 @@ pub mod StrkWager {
     #[storage]
     struct Storage {
         wager_count: u64,
-        wagers: Map<u64, Wager>,
+        wagers: Map<u64, Wager>, // wager_id -> Wager
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
@@ -152,14 +152,13 @@ pub mod StrkWager {
 
 
         fn join_wager(ref self: ContractState, wager_id: u64) {
-            let wager = self.wagers.entry(wager_id).read();
+            let wager = self.get_wager(wager_id);
+
+            assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(!wager.resolved, 'Wager is already resolved');
 
             let caller = get_caller_address();
-            println!("caller: {:?}", caller);
             let caller_balance = self.get_balance(caller);
-            println!("caller_balance: {:?}", caller_balance);
-            println!("wager stake: {:?}", wager.stake);
             assert(caller_balance >= wager.stake, 'Insufficient balance');
 
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
@@ -201,6 +200,7 @@ pub mod StrkWager {
             self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
         }
 
+        //TODO
         fn resolve_wager(ref self: ContractState, wager_id: u64, winner: ContractAddress) {
             let mut wager = self.wagers.entry(wager_id).read();
             assert(!wager.resolved, 'Wager is already resolved');

@@ -267,10 +267,8 @@ fn test_join_wager_insufficient_balance() {
     // Fund wallet with insufficient amount
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(deposit);
-    stop_cheat_caller_address(wager.contract_address);
 
     // Attempt to join the wager (should panic)
-    start_cheat_caller_address(wager.contract_address, bob);
     wager.join_wager(wager_id);
     stop_cheat_caller_address(wager.contract_address);
 }
