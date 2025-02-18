@@ -328,12 +328,10 @@ fn test_get_wager() {
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-
-    // Create a wager 
+    // Create a wager
     let stake = 1000_u256;
     let deposit = 2000_u256;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake, admin_address);
-
 
     let retrieved_wager = wager.get_wager(wager_id);
 
@@ -345,5 +343,4 @@ fn test_get_wager() {
     assert!(retrieved_wager.stake == stake, "Incorrect stake");
     assert!(!retrieved_wager.resolved, "Wager should not be resolved");
     assert!(retrieved_wager.mode == Mode::HeadToHead, "Incorrect mode");
-
 }
