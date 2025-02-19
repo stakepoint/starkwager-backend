@@ -10,6 +10,17 @@ async function bootstrap() {
     .setTitle('Starkwager backend')
     .setDescription('Backend for starkwager')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-AUTH',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger/api', app, document);

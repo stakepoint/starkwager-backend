@@ -4,7 +4,6 @@ import {
   IsString,
   IsNumber,
   IsPositive,
-  IsIn,
   IsEnum,
 } from 'class-validator';
 
@@ -36,7 +35,7 @@ export class CreateWagerDto {
   @IsString()
   @IsNotEmpty()
   @IsEnum(WagerStatus)
-  @IsOptional() 
+  @IsOptional()
   status?: string;
 
   @IsString()
@@ -46,4 +45,12 @@ export class CreateWagerDto {
   @IsOptional()
   @IsString({ each: true }) // Ensures all elements in the array are strings
   tags?: string[];
+}
+
+export class GetWagersQueryDto {
+  @IsOptional()
+  @IsEnum(WagerStatus, {
+    message: `Invalid status. Valid values are: ${Object.values(WagerStatus).join(', ')}`,
+  })
+  status?: WagerStatus;
 }

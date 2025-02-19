@@ -15,7 +15,9 @@ import { CreateWagerInvitationDto } from '../dtos/wagerInvitations.dto';
 import { CreateInvitationGuard } from '../guards/wagerInvitation.guard';
 import { ConfigType } from '@nestjs/config';
 import { AppConfig } from 'src/config';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth('JWT-AUTH')
 @Controller('invitations')
 export class WagerInvitationController {
   constructor(
