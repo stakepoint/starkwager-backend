@@ -4,7 +4,15 @@ import {
   IsString,
   IsNumber,
   IsPositive,
+  IsEnum,
 } from 'class-validator';
+
+enum WagerStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+}
+export default WagerStatus;
 
 export class CreateWagerDto {
   @IsString()
@@ -25,10 +33,24 @@ export class CreateWagerDto {
   stakeAmount: number;
 
   @IsString()
+  @IsNotEmpty()
+  @IsEnum(WagerStatus)
+  @IsOptional()
+  status?: string;
+
+  @IsString()
   @IsOptional()
   createdById: string;
 
   @IsOptional()
   @IsString({ each: true }) // Ensures all elements in the array are strings
   tags?: string[];
+}
+
+export class GetWagersQueryDto {
+  @IsOptional()
+  @IsEnum(WagerStatus, {
+    message: `Invalid status. Valid values are: ${Object.values(WagerStatus).join(', ')}`,
+  })
+  status?: WagerStatus;
 }

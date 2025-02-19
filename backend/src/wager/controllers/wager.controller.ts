@@ -6,11 +6,14 @@ import {
   Param,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { WagerService } from '../services/wager.service';
-import { CreateWagerDto } from '../dtos/wager.dto';
+import { CreateWagerDto, GetWagersQueryDto } from '../dtos/wager.dto';
 import { CreateWagerGuard } from '../guards/wager.guard';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
+@ApiBearerAuth('JWT-AUTH')
 @Controller('wager')
 export class WagerController {
   constructor(private readonly wagerService: WagerService) {}
@@ -22,9 +25,14 @@ export class WagerController {
     return this.wagerService.createWager({ ...data, createdById: userId });
   }
 
+  @ApiQuery({
+    name: 'status',
+    required: true,
+    enum: ['pending', 'completed', 'active'],
+  })
   @Get('all')
-  findAll() {
-    return this.wagerService.getAllWagers();
+  findAll(@Query() query: GetWagersQueryDto) {
+    return this.wagerService.getAllWagers(query.status);
   }
 
   @Get('view/:id')

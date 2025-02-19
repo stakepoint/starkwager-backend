@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
-import { CreateWagerDto } from '../dtos/wager.dto';
+import WagerStatus, { CreateWagerDto } from '../dtos/wager.dto';
 
 @Injectable()
 export class WagerService {
@@ -10,8 +10,8 @@ export class WagerService {
     return await this.prisma.wager.create({ data });
   }
 
-  async getAllWagers() {
-    return await this.prisma.wager.findMany();
+  async getAllWagers(status: WagerStatus) {
+    return await this.prisma.wager.findMany({ where: { status } });
   }
 
   async findOneById(id: string) {

@@ -31,6 +31,7 @@ model Wager {
   categoryId  String    @map("category_id")
   tags        String[]
   stakeAmount Float     @map("stake_amount")
+  status    String   @default("pending")
   createdById String    @map("created_by")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
