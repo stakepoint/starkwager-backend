@@ -8,13 +8,14 @@ export class NotificationService {
 
   async createNotification(data: CreateNotificationDto) {
     const { userId, isRead, message, type} = data
-    return await this.prisma.notification.create({ data:{
+     const notification = await this.prisma.notification.create({ data:{
        userId,
        message,
        type,
        isRead
     }
     })
+    return {data: notification}
   }
 
   async getNotifications(userId: string, isRead?: boolean){
