@@ -12,6 +12,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { UpdateAvatarDto } from './dto/update-avatar.dto';
 
 @ApiBearerAuth('JWT-AUTH')
 @Controller('users')
@@ -42,5 +43,10 @@ export class UsersController {
   updateUsername(@Req() req, @Body() updateUsernameDto: UpdateUsernameDto) {
     const userId = req.user.sub;
     return this.usersService.updateUsername(userId, updateUsernameDto);
+  }
+
+  @Patch(':id/avatar')
+  updateAvatar(@Param('id') id: string, @Body() updateAvatarDto: UpdateAvatarDto) {
+    return this.usersService.updateUsername(id, null, updateAvatarDto);
   }
 }
