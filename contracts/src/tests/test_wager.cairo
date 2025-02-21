@@ -94,7 +94,7 @@ fn test_get_escrow_address() {
 }
 
 #[test]
-fn test_create_wager_success() {
+fn test_create_wager_success_with_in_app_wallet_balance() {
     let (wager, escrow, strk_dispatcher) = setup();
 
     let mut spy = spy_events();
@@ -108,6 +108,20 @@ fn test_create_wager_success() {
 }
 
 #[test]
+fn test_create_wager_success_with_external_wallet_balance() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    let mut spy = spy_events();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+    // user have less deposite than required for stake, but still has enough balance on his external wallet
+    create_wager(wager, escrow, strk_dispatcher, 2000, 2200);
+}
+
+#[test]
 #[should_panic(expected: 'Insufficient balance')]
 fn test_create_wager_insufficient_balance() {
     let (wager, escrow, strk_dispatcher) = setup();
@@ -118,6 +132,12 @@ fn test_create_wager_insufficient_balance() {
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
+    
+    // transfer all funds to another account so OWNER has inssuficient balance on external wallet
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(contract_address_const::<'any-address'>(), strk_dispatcher.balance_of(OWNER()));
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
     create_wager(wager, escrow, strk_dispatcher, 2000, 2200);
 }
 
