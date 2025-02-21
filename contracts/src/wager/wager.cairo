@@ -104,7 +104,9 @@ pub mod StrkWager {
         }
 
         //TODO
-        fn withdraw_from_wallet(ref self: ContractState, amount: u256) {}
+        fn withdraw_from_wallet(ref self: ContractState, amount: u256) {
+            let to = get_caller_address();
+        }
 
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
             let escrow_dispatcher = IEscrowDispatcher {
