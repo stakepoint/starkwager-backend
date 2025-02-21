@@ -27,13 +27,13 @@ export class NotificationController {
     return this.notificationService.createNotification({ ...data });
   }
 
-    @Get(':userId/all')
-    findAll(
-      @Param('userId') userId: string,
-      @Query('isRead') isRead: boolean
-    ) {
-      return this.notificationService.getNotifications(userId, isRead);
-    }
+  @Get(':userId/all')
+  findAll(
+    @Param('userId') userId: string,
+    @Query('isRead') isRead: boolean
+  ) {
+    return this.notificationService.getNotifications(userId, isRead);
+  }
   
  @Patch(':id/read')
   markAsRead(@Param('id') id: string) {
@@ -45,9 +45,9 @@ export class NotificationController {
     return this.notificationService.deleteNotification(id);
   }
 
-  @Get('view/:id')
-  getNotification(@Param('id') id: string) {
-    return this.notificationService.getANotification(id);
+  @Get(':userId/view/:id')
+  getNotification(@Param('id') id: string, @Param('userId') userId: string,) {
+    return this.notificationService.getANotification(id, userId);
   }
 
 }
