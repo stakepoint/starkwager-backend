@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Length, Matches, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
 
 export class UpdateUsernameDto {
   @IsString()
@@ -8,7 +8,4 @@ export class UpdateUsernameDto {
     message: 'Username can only contain letters, numbers, and underscores',
   })
   username: string;
-
-  @IsUrl({}, { message: 'Picture must be a valid URL' })
-  picture: string;
 }
