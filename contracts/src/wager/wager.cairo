@@ -172,20 +172,7 @@ pub mod StrkWager {
             self.wagers.entry(wager_id).read()
         }
 
-
-        fn get_wager_participants(self: @ContractState, wager_id: u64) -> Span<ContractAddress> {
-            let participant_count = self.wager_participants_count.entry(wager_id).read();
-            let mut participants = array![];
-            let mut i = 1;
-
-            while i <= participant_count {
-                let participant = self.wager_participants.entry(wager_id).entry(i).read();
-                participants.append(participant);
-                i += 1;
-            };
-
-            participants.span()
-        }
+        
 
         fn get_escrow_address(self: @ContractState) -> ContractAddress {
             self.escrow_address.read()
@@ -209,6 +196,22 @@ pub mod StrkWager {
             wager.winner = winner;
 
             self.wagers.entry(wager_id).write(wager);
+        }
+        fn is_wager_participant(self: @ContractState, wager_id: u64, caller: ContractAddress) -> bool {
+            let participant_count = self.wager_participants_count.entry(wager_id).read();
+            let mut i = 1;
+            let mut is_participant = false;
+        
+            while i <= participant_count {
+                let participant = self.wager_participants.entry(wager_id).entry(i).read();
+                if participant == caller {
+                    is_participant = true; // Set flag to true if participant is found
+                    break;
+                }
+                i += 1;
+            };
+        
+            is_participant // Return the correct value
         }
     }
 
