@@ -171,22 +171,6 @@ pub mod StrkWager {
         fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
             self.wagers.entry(wager_id).read()
         }
-        fn is_wager_participant(self: @ContractState, wager_id: u64, caller: ContractAddress) -> bool {
-            let participant_count = self.wager_participants_count.entry(wager_id).read();
-            let mut i = 1;
-            let mut is_participant = false;
-        
-            while i <= participant_count {
-                let participant = self.wager_participants.entry(wager_id).entry(i).read();
-                if participant == caller {
-                    is_participant = true; // Set flag to true if participant is found
-                    break;
-                }
-                i += 1;
-            };
-        
-            false //Replace with correct return value
-        }
 
         
 
@@ -213,20 +197,22 @@ pub mod StrkWager {
 
             self.wagers.entry(wager_id).write(wager);
         }
-    fn is_wager_participant(self: @ContractState, wager_id: u64, caller: ContractAddress) -> bool {
-        let _participant_count = self.wager_participants_count.entry(wager_id).read();
-        let mut _i = 1;
-        let mut _is_participant = false;
-        while _i <= _participant_count {
-            let participant = self.wager_participants.entry(wager_id).entry(_i).read();
-            if participant == caller {
-                _is_participant = true; // Set flag to true if participant is found
-                break;
-            }
-            _i += 1;
-        };
-        false // Return `false` if participant is not found
-    }
+        fn is_wager_participant(self: @ContractState, wager_id: u64, caller: ContractAddress) -> bool {
+            let participant_count = self.wager_participants_count.entry(wager_id).read();
+            let mut i = 1;
+            let mut is_participant = false;
+        
+            while i <= participant_count {
+                let participant = self.wager_participants.entry(wager_id).entry(i).read();
+                if participant == caller {
+                    is_participant = true; // Set flag to true if participant is found
+                    break;
+                }
+                i += 1;
+            };
+        
+            is_participant // Return the correct value
+        }
     }
 
     #[generate_trait]
