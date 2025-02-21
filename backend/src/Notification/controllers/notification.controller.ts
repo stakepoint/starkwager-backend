@@ -8,6 +8,7 @@ import {
   Req,
   Query,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { NotificationService } from '../services/notification.service';
 import { CreateNotificationDto } from '../dtos/notification.dto';
@@ -37,6 +38,11 @@ export class NotificationController {
  @Patch(':id/read')
   markAsRead(@Param('id') id: string) {
     return this.notificationService.markAsRead(id);
+  }
+
+  @Delete(':id')
+  async deleteNotification(@Param('id') id: string) {
+    return this.notificationService.deleteNotification(id);
   }
 
 }

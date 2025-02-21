@@ -49,6 +49,7 @@ export class NotificationService {
     if (!notification) {
       throw new NotFoundException('Notification not found');
     }
-    return this.prisma.notification.delete({ where: { id } });
+    await this.prisma.notification.delete({ where: { id } });
+    return {data: true, message: 'Deleted'}
   }
   }
