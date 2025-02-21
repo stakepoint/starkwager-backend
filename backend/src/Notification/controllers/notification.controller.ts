@@ -41,8 +41,13 @@ export class NotificationController {
   }
 
   @Delete(':id')
-  async deleteNotification(@Param('id') id: string) {
+  deleteNotification(@Param('id') id: string) {
     return this.notificationService.deleteNotification(id);
+  }
+
+  @Get('view/:id')
+  getNotification(@Param('id') id: string) {
+    return this.notificationService.getANotification(id);
   }
 
 }

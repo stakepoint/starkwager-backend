@@ -53,4 +53,13 @@ export class NotificationService {
     await this.prisma.notification.delete({ where: { id } });
     return {data: true, message: 'Deleted'}
   }
+
+async getANotification(id: string) {
+    const notification = await this.prisma.notification.findUnique({ where: { id } });
+
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+    return {data: notification};
   }
+ }
