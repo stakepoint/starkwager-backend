@@ -55,7 +55,10 @@ pub fn deploy_escrow(wager_address: ContractAddress) -> (IEscrowDispatcher, IERC
 pub fn deploy_wager(admin_address: ContractAddress) -> (IStrkWagerDispatcher, ContractAddress) {
     let contract = declare("StrkWager").unwrap().contract_class();
     let mut calldata = array![];
+    let strk_dispatcher = deploy_mock_erc20();
+    let strk_address = strk_dispatcher.contract_address;
     admin_address.serialize(ref calldata);
+    strk_address.serialize(ref calldata);
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     let dispatcher = IStrkWagerDispatcher { contract_address };

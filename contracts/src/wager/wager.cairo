@@ -13,6 +13,7 @@ pub mod StrkWager {
     use contracts::wager::types::{Wager, Category, Mode};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin_access::accesscontrol::{AccessControlComponent};
+    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -33,6 +34,7 @@ pub mod StrkWager {
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
+        strk_address: ContractAddress,
         #[substorage(v0)]
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
@@ -78,9 +80,10 @@ pub mod StrkWager {
 
 
     #[constructor]
-    fn constructor(ref self: ContractState, admin_contract: ContractAddress) {
+    fn constructor(ref self: ContractState, admin_contract: ContractAddress, strk_address: ContractAddress) {
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(ADMIN_ROLE, admin_contract);
+        self.strk_address.write(strk_address);
     }
 
     #[abi(embed_v0)]
@@ -121,10 +124,9 @@ pub mod StrkWager {
             stake: u256,
             mode: Mode
         ) -> u64 {
+            assert(self._has_sufficient_balance(stake), 'Insufficient balance');
+            
             let creator = get_caller_address();
-            let creator_balance = self.get_balance(creator);
-
-            assert(creator_balance >= stake, 'Insufficient balance');
             let wager_id = self.wager_count.read() + 1;
 
             let new_wager = Wager {
@@ -156,10 +158,9 @@ pub mod StrkWager {
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(!wager.resolved, 'Wager is already resolved');
-
+            assert(self._has_sufficient_balance(wager.stake), 'Insufficient balance');
+            
             let caller = get_caller_address();
-            let caller_balance = self.get_balance(caller);
-            assert(caller_balance >= wager.stake, 'Insufficient balance');
 
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
             self.wager_participants.entry(wager_id).entry(participant_id).write(caller);
@@ -214,6 +215,24 @@ pub mod StrkWager {
 
     #[generate_trait]
     pub impl InternalFunctions of InternalFunctionsTrait {
+        fn _has_sufficient_balance(self: @ContractState, stake:u256) -> bool {
+            let caller = get_caller_address();
+            // Evaluating in-app wallet balance
+            let escrow_dispatcher = IEscrowDispatcher { contract_address: self.escrow_address.read() };
+            let in_app_balance = escrow_dispatcher.get_balance(caller);
+            if in_app_balance >= stake {
+                return true;
+            }
+            
+            // Evaluating external wallet balance
+            let strk_dispatcher = IERC20Dispatcher { contract_address: self.strk_address.read() };
+            let external_balance = strk_dispatcher.balance_of(caller);
+            if external_balance >= stake {
+                return true;
+            }
+
+            false
+        }
         //TODO
         fn _check_balance(self: @ContractState) -> bool {
             true
