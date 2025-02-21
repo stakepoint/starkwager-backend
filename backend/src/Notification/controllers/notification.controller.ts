@@ -7,6 +7,7 @@ import {
   UseGuards,
   Req,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { NotificationService } from '../services/notification.service';
 import { CreateNotificationDto } from '../dtos/notification.dto';
@@ -33,5 +34,9 @@ export class NotificationController {
       return this.notificationService.getNotifications(userId, isRead);
     }
   
+ @Patch(':id/read')
+  markAsRead(@Param('id') id: string) {
+    return this.notificationService.markAsRead(id);
+  }
 
 }

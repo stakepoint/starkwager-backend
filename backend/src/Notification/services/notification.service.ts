@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
-import  { CreateNotificationDto, UpdateNotificationDto } from '../dtos/notification.dto';
+import  { CreateNotificationDto } from '../dtos/notification.dto';
 
 @Injectable()
 export class NotificationService {
@@ -24,24 +24,23 @@ export class NotificationService {
     }
     const notifications = await this.prisma.notification.findMany({where: {userId, isRead}})
     if(!notifications || notifications.length === 0){
-      return []
+      return {data: [], totalcount: notifications.length}
     }
 
     return {data: notifications, totalcount: notifications.length }
   }
 
 
-  async markAsRead(id: string, dto: UpdateNotificationDto) {
-    const { isRead } = dto;
-  
+  async markAsRead(id: string) {  
     const notification = await this.prisma.notification.findUnique({ where: { id } });
   
     if (!notification) {
       throw new NotFoundException('Notification not found');
     }
-      return this.prisma.notification.update({
+      const updated = await this.prisma.notification.update({
       where: { id },  
-      data: { isRead }, 
+      data: { isRead: true }, 
     });
+    return {isRead: updated.isRead, message: 'marked'}
   }
   }

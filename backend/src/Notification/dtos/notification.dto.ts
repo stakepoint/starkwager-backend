@@ -33,8 +33,3 @@ export class CreateNotificationDto {
   type: NotificationType;
 
 }
-
-export class UpdateNotificationDto {
-  @IsBoolean()
-  isRead: boolean
-}
