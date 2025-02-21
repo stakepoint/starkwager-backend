@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import  { CreateNotificationDto } from '../dtos/notification.dto';
 
@@ -15,6 +15,19 @@ export class NotificationService {
        isRead
     }
     })
+  }
+
+  async getNotifications(userId: string){
+    const user = await this.prisma.user.findUnique({where:{id: userId}})
+    if(!user){
+      throw new BadRequestException('User does not exist');
+    }
+    const notifications = await this.prisma.notification.findMany({where: {userId}})
+    if(!notifications || notifications.length === 0){
+      return []
+    }
+
+    return {data: notifications, totalcount: notifications.length }
   }
 
 }

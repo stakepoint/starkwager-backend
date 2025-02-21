@@ -25,4 +25,10 @@ export class NotificationController {
     return this.notificationService.createNotification({ ...data });
   }
 
+    @Get(':userId/all')
+    findAll(@Param('userId') userId: string) {
+      return this.notificationService.getNotifications(userId);
+    }
+  
+
 }
