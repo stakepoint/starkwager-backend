@@ -51,11 +51,11 @@ export class UsersService {
     userId: string,
     updateUsernameDto: UpdateUsernameDto,
   ): Promise<User> {
-    const { username } = updateUsernameDto;
+    const { username, picture } = updateUsernameDto;
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: { username },
+      data: { username, picture },
     });
 
     return updatedUser;
