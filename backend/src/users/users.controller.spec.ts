@@ -61,4 +61,26 @@ describe('UsersController', () => {
       );
     });
   });
+
+  describe('updateAvatar', () => {
+    it('should update the avatar', async () => {
+      const updateAvatarDto = { picture: 'newPicture' };
+      const updatedUser =
+        { id: 'test-user-id', picture: 'newPicture' };
+      
+      jest.spyOn(usersService, 'updateUsername').mockResolvedValue(updatedUser);
+
+      const result = await controller.updateAvatar(
+      'test-user-id' ,
+        updateAvatarDto,
+      );
+
+      expect(result).toEqual(updatedUser);
+      expect(usersService.updateAvatar).toHaveBeenCalledWith(
+        'test-user-id',
+        updateAvatarDto,
+      );
+    });
+  });
+
 });
