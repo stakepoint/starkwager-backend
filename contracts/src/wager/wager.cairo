@@ -80,7 +80,9 @@ pub mod StrkWager {
 
 
     #[constructor]
-    fn constructor(ref self: ContractState, admin_contract: ContractAddress, strk_address: ContractAddress) {
+    fn constructor(
+        ref self: ContractState, admin_contract: ContractAddress, strk_address: ContractAddress
+    ) {
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(ADMIN_ROLE, admin_contract);
         self.strk_address.write(strk_address);
@@ -125,7 +127,7 @@ pub mod StrkWager {
             mode: Mode
         ) -> u64 {
             assert(self._has_sufficient_balance(stake), 'Insufficient balance');
-            
+
             let creator = get_caller_address();
             let wager_id = self.wager_count.read() + 1;
 
@@ -159,7 +161,7 @@ pub mod StrkWager {
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(!wager.resolved, 'Wager is already resolved');
             assert(self._has_sufficient_balance(wager.stake), 'Insufficient balance');
-            
+
             let caller = get_caller_address();
 
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
@@ -215,15 +217,17 @@ pub mod StrkWager {
 
     #[generate_trait]
     pub impl InternalFunctions of InternalFunctionsTrait {
-        fn _has_sufficient_balance(self: @ContractState, stake:u256) -> bool {
+        fn _has_sufficient_balance(self: @ContractState, stake: u256) -> bool {
             let caller = get_caller_address();
             // Evaluating in-app wallet balance
-            let escrow_dispatcher = IEscrowDispatcher { contract_address: self.escrow_address.read() };
+            let escrow_dispatcher = IEscrowDispatcher {
+                contract_address: self.escrow_address.read()
+            };
             let in_app_balance = escrow_dispatcher.get_balance(caller);
             if in_app_balance >= stake {
                 return true;
             }
-            
+
             // Evaluating external wallet balance
             let strk_dispatcher = IERC20Dispatcher { contract_address: self.strk_address.read() };
             let external_balance = strk_dispatcher.balance_of(caller);

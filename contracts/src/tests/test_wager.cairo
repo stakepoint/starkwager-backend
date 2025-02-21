@@ -117,7 +117,8 @@ fn test_create_wager_success_with_external_wallet_balance() {
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
-    // user have less deposite than required for stake, but still has enough balance on his external wallet
+    // user have less deposite than required for stake, but still has enough balance on his external
+    // wallet
     create_wager(wager, escrow, strk_dispatcher, 2000, 2200);
 }
 
@@ -132,10 +133,11 @@ fn test_create_wager_insufficient_balance() {
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
-    
+
     // transfer all funds to another account so OWNER has inssuficient balance on external wallet
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
-    strk_dispatcher.transfer(contract_address_const::<'any-address'>(), strk_dispatcher.balance_of(OWNER()));
+    strk_dispatcher
+        .transfer(contract_address_const::<'any-address'>(), strk_dispatcher.balance_of(OWNER()));
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
     create_wager(wager, escrow, strk_dispatcher, 2000, 2200);
@@ -270,7 +272,7 @@ fn test_join_wager_success_with_external_wallet_balance() {
 
     // Create a wager
     let stake = 100_u256;
-    let deposit = stake-10;
+    let deposit = stake - 10;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
 
     // Approve tokens from OWNER for escrow
@@ -334,7 +336,7 @@ fn test_join_wager_insufficient_balance() {
     strk_dispatcher.transfer(bob, deposit);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // BOB approves tokens 
+    // BOB approves tokens
     start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, deposit);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
