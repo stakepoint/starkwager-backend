@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::{testing, contract_address_const, get_caller_address};
+use starknet::{contract_address_const, get_caller_address};
 
 use contracts::wager::wager::StrkWager;
 use contracts::wager::types::{Category, Mode};
@@ -17,7 +17,7 @@ use snforge_std::{
 #[test]
 #[should_panic(expected: 'Caller is missing role')]
 fn test_set_escrow_address_fail() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (_wager, _escrow, _strk_dispatcher) = setup();
 
     let new_address = contract_address_const::<'new_address'>();
     start_cheat_caller_address(wager.contract_address, new_address);
@@ -322,4 +322,72 @@ fn test_get_wager() {
     assert!(retrieved_wager.stake == stake, "Incorrect stake");
     assert!(!retrieved_wager.resolved, "Wager should not be resolved");
     assert!(retrieved_wager.mode == Mode::HeadToHead, "Incorrect mode");
+}
+#[test]
+fn test_is_wager_participant_true() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+
+    // Approve tokens from OWNER for escrow
+    let owner = OWNER();
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.join_wager(wager_id);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Check if the participant is registered
+    let is_participant = wager.is_wager_participant(wager_id, owner);
+    assert!(is_participant, "Caller should be a participant");
+}
+
+#[test]
+fn test_is_wager_participant_false() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+
+    // Check if a non-participant is registered
+    let non_participant = BOB();
+    let is_participant = wager.is_wager_participant(wager_id, non_participant);
+    assert!(!is_participant, "Caller should not be a participant");
+}
+
+#[test]
+fn test_is_wager_participant_invalid_wager() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Check if a caller is registered in a non-existent wager
+    let invalid_wager_id = 999; // Non-existent wager ID
+    let caller = OWNER();
+    let is_participant = wager.is_wager_participant(invalid_wager_id, caller);
+    assert!(!is_participant, "Caller should not be a participant in a non-existent wager");
 }
