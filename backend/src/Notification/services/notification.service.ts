@@ -43,4 +43,12 @@ export class NotificationService {
     });
     return {isRead: updated.isRead, message: 'marked'}
   }
+
+  async deleteNotification(id: string) {
+    const notification = await this.prisma.notification.findUnique({ where: { id } });
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+    return this.prisma.notification.delete({ where: { id } });
+  }
   }
