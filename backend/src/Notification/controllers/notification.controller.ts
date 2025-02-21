@@ -26,8 +26,11 @@ export class NotificationController {
   }
 
     @Get(':userId/all')
-    findAll(@Param('userId') userId: string) {
-      return this.notificationService.getNotifications(userId);
+    findAll(
+      @Param('userId') userId: string,
+      @Query('isRead') isRead: boolean
+    ) {
+      return this.notificationService.getNotifications(userId, isRead);
     }
   
 

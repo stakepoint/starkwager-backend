@@ -17,12 +17,12 @@ export class NotificationService {
     })
   }
 
-  async getNotifications(userId: string){
+  async getNotifications(userId: string, isRead?: boolean){
     const user = await this.prisma.user.findUnique({where:{id: userId}})
     if(!user){
       throw new BadRequestException('User does not exist');
     }
-    const notifications = await this.prisma.notification.findMany({where: {userId}})
+    const notifications = await this.prisma.notification.findMany({where: {userId, isRead}})
     if(!notifications || notifications.length === 0){
       return []
     }
