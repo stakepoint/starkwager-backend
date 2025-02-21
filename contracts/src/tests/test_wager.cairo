@@ -204,7 +204,7 @@ fn test_fund_wallet_without_approval() {
 
 
 #[test]
-fn test_join_wager_success() {
+fn test_join_wager_success_with_in_app_wallet_balance() {
     let (wager, escrow, strk_dispatcher) = setup();
 
     let mut spy = spy_events();
@@ -217,6 +217,61 @@ fn test_join_wager_success() {
     // Create a wager
     let stake = 100_u256;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+
+    // Approve tokens from OWNER for escrow
+    let owner = OWNER();
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.join_wager(wager_id);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let participants = wager.get_wager_participants(wager_id);
+    let mut found = false;
+    for participant_address in participants {
+        if participant_address == @owner {
+            found = true;
+            break;
+        }
+    };
+    assert!(found, "Participant should be added to the wager");
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    wager.contract_address,
+                    StrkWager::Event::WagerJoined(
+                        StrkWager::WagerJoinedEvent { wager_id, participant: owner }
+                    )
+                )
+            ]
+        );
+}
+
+#[test]
+fn test_join_wager_success_with_external_wallet_balance() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    let mut spy = spy_events();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let deposit = stake-10;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
 
     // Approve tokens from OWNER for escrow
     let owner = OWNER();
@@ -272,14 +327,14 @@ fn test_join_wager_insufficient_balance() {
     // Create a wager
     let stake = 100_u256;
     let deposit = 20_u256; // Insufficient deposit
-    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
 
-    // Mint tokens for BOB
+    // Mint tokens for BOB (not enough)
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
     strk_dispatcher.transfer(bob, deposit);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // BOB approves tokens
+    // BOB approves tokens 
     start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, deposit);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
