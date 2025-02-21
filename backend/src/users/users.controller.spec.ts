@@ -76,9 +76,8 @@ describe('UsersController', () => {
       );
 
       expect(result).toEqual(updatedUser);
-      expect(usersService.updateUsername).toHaveBeenCalledWith(
+      expect(usersService.updateAvatar).toHaveBeenCalledWith(
         'test-user-id',
-        undefined,
         updateAvatarDto,
       );
     });

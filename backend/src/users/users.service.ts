@@ -50,17 +50,27 @@ export class UsersService {
 
   async updateUsername(
     userId: string,
-    updateUsernameDto?: UpdateUsernameDto,
-    updateAvatarDto?: UpdateAvatarDto,
+    updateUsernameDto: UpdateUsernameDto,
   ): Promise<User> {
-    const { username } = updateUsernameDto || {};
-    const { picture } = updateAvatarDto || {};
+    const { username, picture } = updateUsernameDto;
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        ...(username && { username }),
-        ...(picture && { picture }),
+        username,
+        picture
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async updateAvatar(userId: string, updateAvatarDto: UpdateAvatarDto): Promise<User> {
+    const { picture } = updateAvatarDto;
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        picture,
       },
     });
 

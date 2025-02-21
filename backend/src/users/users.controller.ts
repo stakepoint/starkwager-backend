@@ -45,8 +45,9 @@ export class UsersController {
     return this.usersService.updateUsername(userId, updateUsernameDto);
   }
 
-  @Patch(':id/avatar')
-  updateAvatar(@Param('id') id: string, @Body() updateAvatarDto: UpdateAvatarDto) {
-    return this.usersService.updateUsername(id, null, updateAvatarDto);
+  @Patch('/avatar')
+  updateAvatar(@Req() req, @Body() updateAvatarDto: UpdateAvatarDto) {
+    const userId = req.user.sub;
+    return this.usersService.updateAvatar(userId, updateAvatarDto);
   }
 }
