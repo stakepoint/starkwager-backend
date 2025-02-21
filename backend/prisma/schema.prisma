@@ -66,6 +66,13 @@ enum Role {
   Admin
 }
 
+enum NotificationType {
+  invitation
+  general
+  wager_update
+}
+
+
 model Hashtag {
   id        String   @id @default(uuid())
   name      String   @unique
@@ -90,4 +97,16 @@ model Invitation {
   invitedUser User @relation(fields: [invitedUsername], references: [username], name: "ReceivedInvitations")
 
   @@map("invitations")
+}
+
+model Notifications {
+  id         String   @id @default(uuid())
+  userId      String?   @map("user_id") 
+  type       NotificationType   
+  message    String   
+  isRead     Boolean  @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@map("Notifications")
 }
