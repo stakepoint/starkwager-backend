@@ -42,7 +42,7 @@ fn test_deposit_to_wallet_insufficient_balance() {
 
     // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(BOB(), amount);
     stop_cheat_caller_address(escrow.contract_address);
@@ -61,7 +61,7 @@ fn test_deposit_to_wallet_ok() {
 
     // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(OWNER(), amount);
 
@@ -84,7 +84,7 @@ fn test_withdraw_from_wallet() {
 
     // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(OWNER(), initial_balance);
 
@@ -132,7 +132,7 @@ fn test_get_balance() {
 
     // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(OWNER(), amount);
 

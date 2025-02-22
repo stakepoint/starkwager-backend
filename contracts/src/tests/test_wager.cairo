@@ -10,7 +10,7 @@ use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
 };
 
 
@@ -43,13 +43,13 @@ fn test_set_escrow_address() {
                     StrkWager::Event::EscrowAddressUpdated(
                         StrkWager::EscrowAddressEvent {
                             old_address: contract_address_const::<
-                                0
+                                0,
                             >(), // Assuming initial address is zero
-                            new_address: new_address
-                        }
-                    )
-                )
-            ]
+                            new_address: new_address,
+                        },
+                    ),
+                ),
+            ],
         );
 
     let updated_address: ContractAddress = wager.get_escrow_address();
@@ -230,10 +230,10 @@ fn test_join_wager_success() {
                 (
                     wager.contract_address,
                     StrkWager::Event::WagerJoined(
-                        StrkWager::WagerJoinedEvent { wager_id, participant: owner }
-                    )
-                )
-            ]
+                        StrkWager::WagerJoinedEvent { wager_id, participant: owner },
+                    ),
+                ),
+            ],
         );
 }
 

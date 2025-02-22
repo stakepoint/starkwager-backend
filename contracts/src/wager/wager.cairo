@@ -108,7 +108,7 @@ pub mod StrkWager {
 
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
             let escrow_dispatcher = IEscrowDispatcher {
-                contract_address: self.escrow_address.read()
+                contract_address: self.escrow_address.read(),
             };
             escrow_dispatcher.get_balance(address)
         }
@@ -119,7 +119,7 @@ pub mod StrkWager {
             title: ByteArray,
             terms: ByteArray,
             stake: u256,
-            mode: Mode
+            mode: Mode,
         ) -> u64 {
             let creator = get_caller_address();
             let creator_balance = self.get_balance(creator);
@@ -136,7 +136,7 @@ pub mod StrkWager {
                 stake,
                 resolved: false,
                 winner: contract_address_const::<0>(),
-                mode
+                mode,
             };
 
             self.wagers.entry(wager_id).write(new_wager);
@@ -172,7 +172,6 @@ pub mod StrkWager {
             self.wagers.entry(wager_id).read()
         }
 
-        
 
         fn get_escrow_address(self: @ContractState) -> ContractAddress {
             self.escrow_address.read()
@@ -197,11 +196,13 @@ pub mod StrkWager {
 
             self.wagers.entry(wager_id).write(wager);
         }
-        fn is_wager_participant(self: @ContractState, wager_id: u64, caller: ContractAddress) -> bool {
+        fn is_wager_participant(
+            self: @ContractState, wager_id: u64, caller: ContractAddress,
+        ) -> bool {
             let participant_count = self.wager_participants_count.entry(wager_id).read();
             let mut i = 1;
             let mut is_participant = false;
-        
+
             while i <= participant_count {
                 let participant = self.wager_participants.entry(wager_id).entry(i).read();
                 if participant == caller {
@@ -210,7 +211,7 @@ pub mod StrkWager {
                 }
                 i += 1;
             };
-        
+
             is_participant // Return the correct value
         }
     }

@@ -13,7 +13,7 @@ pub trait IStrkWager<TContractState> {
         title: ByteArray,
         terms: ByteArray,
         stake: u256,
-        mode: Mode
+        mode: Mode,
     ) -> u64;
     fn join_wager(ref self: TContractState, wager_id: u64);
     fn get_wager(self: @TContractState, wager_id: u64) -> Wager;
@@ -22,5 +22,4 @@ pub trait IStrkWager<TContractState> {
     fn get_escrow_address(self: @TContractState) -> ContractAddress;
     fn resolve_wager(ref self: TContractState, wager_id: u64, winner: ContractAddress);
     fn is_wager_participant(self: @TContractState, wager_id: u64, caller: ContractAddress) -> bool;
-
 }

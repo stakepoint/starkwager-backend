@@ -4,7 +4,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
     stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, cheat_caller_address, CheatSpan,
-    stop_cheat_block_timestamp
+    stop_cheat_block_timestamp,
 };
 
 use contracts::wager::wager::StrkWager;
@@ -85,7 +85,7 @@ pub fn create_wager(
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(creator, deposit);
     stop_cheat_caller_address(escrow.contract_address);
@@ -108,10 +108,10 @@ pub fn create_wager(
                     StrkWager::Event::WagerCreated(
                         StrkWager::WagerCreatedEvent {
                             wager_id, category, title, terms, creator, stake, mode,
-                        }
-                    )
-                )
-            ]
+                        },
+                    ),
+                ),
+            ],
         );
 
     wager_id

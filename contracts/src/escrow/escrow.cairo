@@ -2,7 +2,7 @@
 pub mod Escrow {
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
+        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map,
     };
     use starknet::{ContractAddress, get_contract_address};
     use openzeppelin::introspection::src5::SRC5Component;
@@ -73,7 +73,7 @@ pub mod Escrow {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress
+        ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress,
     ) {
         self.strk_dispatcher.write(strk_dispatcher);
         self.accesscontrol.initializer();
