@@ -323,3 +323,28 @@ fn test_get_wager() {
     assert!(!retrieved_wager.resolved, "Wager should not be resolved");
     assert!(retrieved_wager.mode == Mode::HeadToHead, "Incorrect mode");
 }
+
+#[test]
+fn test_wager_withdraw_from_wallet_success() {
+    let (wager, escrow, strk_dispatcher) = setup();
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let amount = 50_u256;
+    let owner = OWNER();
+    let initial_balance = strk_dispatcher.balance_of(owner);
+    // Approve tokens from OWNER for escrow
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.approve(escrow.contract_address, amount);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Set OWNER as caller for wager contract
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.fund_wallet(amount);
+    let remaining_balance = initial_balance - amount;
+    assert(strk_dispatcher.balance_of(owner) == remaining_balance, 'FUNDING FAILED.');
+    wager.withdraw_from_wallet(amount);
+    assert(strk_dispatcher.balance_of(owner) == initial_balance, 'WITHDRAWAL FAILED');
+    stop_cheat_caller_address(wager.contract_address);
+}
