@@ -37,6 +37,7 @@ pub mod StrkWager {
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
+        i += 1;
     }
 
     #[event]
@@ -168,9 +169,9 @@ pub mod StrkWager {
             self.emit(WagerJoinedEvent { wager_id, participant: caller });
         }
 
-        fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
-            self.wagers.entry(wager_id).read()
-        }
+        // fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
+        //     self.wagers.entry(wager_id).read()
+        // }
 
 
         fn get_escrow_address(self: @ContractState) -> ContractAddress {
@@ -196,24 +197,37 @@ pub mod StrkWager {
 
             self.wagers.entry(wager_id).write(wager);
         }
-        fn is_wager_participant(
-            self: @ContractState, wager_id: u64, caller: ContractAddress,
-        ) -> bool {
+        fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
+            self.wagers.entry(wager_id).read()
+        }
+    
+        fn get_wager_participants(self: @ContractState, wager_id: u64) -> Span<ContractAddress> {
             let participant_count = self.wager_participants_count.entry(wager_id).read();
+            let mut participants = ArrayTrait::new();
             let mut i = 1;
-            let mut is_participant = false;
-
             while i <= participant_count {
                 let participant = self.wager_participants.entry(wager_id).entry(i).read();
-                if participant == caller {
-                    is_participant = true; // Set flag to true if participant is found
-                    break;
-                }
+                participants.append(participant);
                 i += 1;
             };
-
-            is_participant // Return the correct value
+    
+            participants.span()
         }
+    
+        fn is_wager_participant(self: @ContractState, wager_id: u64, caller: ContractAddress) -> bool {
+            let participants = self.get_wager_participants(wager_id);
+            let mut is_participant = false;
+    
+            for participant in participants {
+                if participant == caller {
+                    is_participant = true;
+                    break;
+                }
+            };
+    
+            is_participant
+        }
+    
     }
 
     #[generate_trait]
