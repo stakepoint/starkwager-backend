@@ -26,13 +26,24 @@ export class WagerController {
   }
 
   @ApiQuery({
-    name: 'status',
-    required: true,
-    enum: ['pending', 'completed', 'active'],
+    name: 'hashtags',
+    required: false,
+    description: 'Comma-separated list of hashtags to filter by',
+  })
+  @ApiQuery({
+    name: 'filterType',
+    required: false,
+    enum: ['AND', 'OR'],
+    description:
+      'Filter type: AND (wagers must contain all hashtags) or OR (wagers must contain at least one hashtag)',
   })
   @Get('all')
   findAll(@Query() query: GetWagersQueryDto) {
-    return this.wagerService.getAllWagers(query.status);
+    return this.wagerService.getAllWagers(
+      query.status,
+      query.hashtags,
+      query.filterType,
+    );
   }
 
   @Get('view/:id')
