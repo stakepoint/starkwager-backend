@@ -39,9 +39,10 @@ pub fn deploy_mock_erc20() -> IERC20Dispatcher {
     IERC20Dispatcher { contract_address }
 }
 
-pub fn deploy_escrow(wager_address: ContractAddress) -> (IEscrowDispatcher, IERC20Dispatcher) {
+pub fn deploy_escrow(
+    wager_address: ContractAddress, strk_dispatcher: IERC20Dispatcher
+) -> (IEscrowDispatcher, IERC20Dispatcher) {
     let contract = declare("Escrow").unwrap().contract_class();
-    let strk_dispatcher = deploy_mock_erc20();
 
     let mut calldata = array![];
     strk_dispatcher.serialize(ref calldata);
@@ -52,10 +53,14 @@ pub fn deploy_escrow(wager_address: ContractAddress) -> (IEscrowDispatcher, IERC
     (IEscrowDispatcher { contract_address }, strk_dispatcher)
 }
 
-pub fn deploy_wager(admin_address: ContractAddress) -> (IStrkWagerDispatcher, ContractAddress) {
+pub fn deploy_wager(
+    admin_address: ContractAddress, strk_dispatcher: IERC20Dispatcher
+) -> (IStrkWagerDispatcher, ContractAddress) {
     let contract = declare("StrkWager").unwrap().contract_class();
     let mut calldata = array![];
+    let strk_address = strk_dispatcher.contract_address;
     admin_address.serialize(ref calldata);
+    strk_address.serialize(ref calldata);
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     let dispatcher = IStrkWagerDispatcher { contract_address };
@@ -64,8 +69,10 @@ pub fn deploy_wager(admin_address: ContractAddress) -> (IStrkWagerDispatcher, Co
 }
 
 pub fn setup() -> (IStrkWagerDispatcher, IEscrowDispatcher, IERC20Dispatcher) {
-    let (wager, wager_contract) = deploy_wager(ADMIN());
-    let (escrow, strk_dispatcher) = deploy_escrow(wager_contract);
+    let strk_dispatcher = deploy_mock_erc20();
+
+    let (wager, wager_contract) = deploy_wager(ADMIN(), strk_dispatcher);
+    let (escrow, strk_dispatcher) = deploy_escrow(wager_contract, strk_dispatcher);
 
     (wager, escrow, strk_dispatcher)
 }
