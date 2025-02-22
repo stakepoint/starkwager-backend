@@ -227,7 +227,7 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
     strk_dispatcher.transfer(bob, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
-    
+
     // BOB approves tokens
     start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, stake);
@@ -285,11 +285,11 @@ fn test_join_wager_success_with_external_wallet_balance() {
     let owner = OWNER();
     let bob = BOB();
 
-    // Mint tokens for BOB 
+    // Mint tokens for BOB
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
     strk_dispatcher.transfer(bob, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
-    
+
     // BOB approves tokens
     start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, stake);

@@ -218,7 +218,7 @@ pub mod StrkWager {
     #[generate_trait]
     pub impl InternalFunctions of InternalFunctionsTrait {
         fn _has_sufficient_balance(self: @ContractState, stake: u256) -> bool {
-            let caller = get_caller_address(); 
+            let caller = get_caller_address();
             let in_app_balance = self.get_balance(caller);
             if in_app_balance >= stake {
                 return true;
