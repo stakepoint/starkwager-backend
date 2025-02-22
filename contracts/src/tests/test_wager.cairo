@@ -220,14 +220,21 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
     let stake = 100_u256;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
 
-    // Approve tokens from OWNER for escrow
     let owner = OWNER();
-    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    let bob = BOB();
+
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
     // Fund the wallet of the participant
-    start_cheat_caller_address(wager.contract_address, owner);
+    start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
     stop_cheat_caller_address(wager.contract_address);
 
@@ -275,15 +282,22 @@ fn test_join_wager_success_with_external_wallet_balance() {
     let deposit = stake - 10;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
 
-    // Approve tokens from OWNER for escrow
     let owner = OWNER();
-    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    let bob = BOB();
+
+    // Mint tokens for BOB 
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // Fund the wallet of the participant
-    start_cheat_caller_address(wager.contract_address, owner);
-    wager.fund_wallet(stake);
+    // Fund the in-app wallet of the participant (not enough)
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(deposit);
     stop_cheat_caller_address(wager.contract_address);
 
     // Join the wager
