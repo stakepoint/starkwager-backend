@@ -25,6 +25,10 @@ pub fn WAGER_ADDRESS() -> ContractAddress {
     'wager'.try_into().unwrap()
 }
 
+pub fn ALICE() -> ContractAddress {
+    'alice'.try_into().unwrap()
+}
+
 pub fn BOB() -> ContractAddress {
     'bob'.try_into().unwrap()
 }
