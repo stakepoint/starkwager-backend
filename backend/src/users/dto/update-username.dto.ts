@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUrl, Length, Matches } from 'class-validator';
 
 export class UpdateUsernameDto {
   @IsString()
@@ -8,4 +8,8 @@ export class UpdateUsernameDto {
     message: 'Username can only contain letters, numbers, and underscores',
   })
   username: string;
+
+  @IsUrl()
+  @IsOptional()
+  picture: string;
 }
