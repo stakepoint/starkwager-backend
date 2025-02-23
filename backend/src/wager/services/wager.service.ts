@@ -6,8 +6,15 @@ import WagerStatus, { CreateWagerDto } from '../dtos/wager.dto';
 export class WagerService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createWager(data: CreateWagerDto) {
-    return await this.prisma.wager.create({ data });
+  async createWager(payload: CreateWagerDto) {
+    return await this.prisma.wager.create({
+      data: {
+        ...payload,
+        hashtags: {
+          connect: payload.hashtags.map((name) => ({ name })),
+        },
+      },
+    });
   }
 
   async getAllWagers(

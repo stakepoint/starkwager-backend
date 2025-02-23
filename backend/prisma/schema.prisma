@@ -29,7 +29,6 @@ model Wager {
   name        String
   description String
   categoryId  String    @map("category_id")
-  tags        String[]
   stakeAmount Float     @map("stake_amount")
   status      String    @default("pending")
   createdById String    @map("created_by")
@@ -40,7 +39,7 @@ model Wager {
   category   Category @relation(fields: [categoryId], references: [id])
   createdBy  User     @relation(fields: [createdById], references: [id])
   invitations Invitation[]
-  hashtags   Hashtag[]
+  hashtags    Hashtag[]
 
   @@map("wagers")
 }

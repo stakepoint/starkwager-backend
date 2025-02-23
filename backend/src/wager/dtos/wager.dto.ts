@@ -44,7 +44,7 @@ export class CreateWagerDto {
 
   @IsOptional()
   @IsString({ each: true }) // Ensures all elements in the array are strings
-  tags?: string[];
+  hashtags?: string[];
 }
 
 export class GetWagersQueryDto {
