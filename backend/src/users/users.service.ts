@@ -4,6 +4,7 @@ import { PrismaService } from 'nestjs-prisma';
 
 import { User } from '@prisma/client';
 import { UpdateUsernameDto } from './dto/update-username.dto';
+import { UpdateAvatarDto } from './dto/update-avatar.dto';
 
 @Injectable()
 export class UsersService {
@@ -51,11 +52,26 @@ export class UsersService {
     userId: string,
     updateUsernameDto: UpdateUsernameDto,
   ): Promise<User> {
-    const { username } = updateUsernameDto;
+    const { username, picture } = updateUsernameDto;
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: { username },
+      data: {
+        username,
+        picture
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async updateAvatar(userId: string, updateAvatarDto: UpdateAvatarDto): Promise<User> {
+    const { picture } = updateAvatarDto;
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        picture,
+      },
     });
 
     return updatedUser;
