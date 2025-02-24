@@ -4,7 +4,6 @@ import {
   Post,
   Body,
   Param,
-  UseGuards,
   Req,
   Query,
   Patch,
@@ -12,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { NotificationService } from '../services/notification.service';
 import { CreateNotificationDto } from '../dtos/notification.dto';
-import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiBearerAuth('JWT-AUTH')
 @Controller('notification')
