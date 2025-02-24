@@ -81,7 +81,7 @@ pub mod StrkWager {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, admin_contract: ContractAddress, strk_address: ContractAddress
+        ref self: ContractState, admin_contract: ContractAddress, strk_address: ContractAddress,
     ) {
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(ADMIN_ROLE, admin_contract);
@@ -120,7 +120,7 @@ pub mod StrkWager {
 
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
             let escrow_dispatcher = IEscrowDispatcher {
-                contract_address: self.escrow_address.read()
+                contract_address: self.escrow_address.read(),
             };
             escrow_dispatcher.get_balance(address)
         }
@@ -131,7 +131,7 @@ pub mod StrkWager {
             title: ByteArray,
             terms: ByteArray,
             stake: u256,
-            mode: Mode
+            mode: Mode,
         ) -> u64 {
             assert(self._has_sufficient_balance(stake), 'Insufficient balance');
 
@@ -147,7 +147,7 @@ pub mod StrkWager {
                 stake,
                 resolved: false,
                 winner: contract_address_const::<0>(),
-                mode
+                mode,
             };
 
             self.wagers.entry(wager_id).write(new_wager);
@@ -239,6 +239,23 @@ pub mod StrkWager {
             }
 
             false
+        }
+
+
+        fn is_wager_participant(
+            self: @ContractState, wager_id: u64, caller: ContractAddress,
+        ) -> bool {
+            let participants = self.get_wager_participants(wager_id);
+            let mut is_participant = false;
+
+            for participant in participants {
+                if participant == caller {
+                    is_participant = true;
+                    break;
+                }
+            };
+
+            is_participant
         }
         //TODO
         fn _check_balance(self: @ContractState) -> bool {

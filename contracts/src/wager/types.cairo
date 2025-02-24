@@ -25,5 +25,5 @@ pub enum Category {
 pub enum Mode {
     #[default]
     HeadToHead,
-    Group
+    Group,
 }
