@@ -6,8 +6,8 @@ import  { CreateNotificationDto } from '../dtos/notification.dto';
 export class NotificationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createNotification(data: CreateNotificationDto) {
-    const { userId, isRead, message, type} = data
+  async createNotification(userId: string, data: CreateNotificationDto) {
+    const {isRead, message, type} = data
      const notification = await this.prisma.notification.create({ data:{
        userId,
        message,
@@ -19,15 +19,7 @@ export class NotificationService {
   }
 
   async getNotifications(userId: string, isRead?: boolean){
-    const user = await this.prisma.user.findUnique({where:{id: userId}})
-    if(!user){
-      throw new NotFoundException('User not found');
-    }
     const notifications = await this.prisma.notification.findMany({where: {userId, isRead}})
-    if(!notifications || notifications.length === 0){
-      return {data: [], totalcount: notifications.length}
-    }
-
     return {data: notifications, totalcount: notifications.length }
   }
 

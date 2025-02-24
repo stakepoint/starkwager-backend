@@ -5,19 +5,9 @@ import {
   IsEnum,
   IsBoolean,
 } from 'class-validator';
-
-export enum NotificationType{
-  WAGER_UPDATE = 'wager_update',
-  INVITATION = 'invitation',
-  GENERAL = 'general',
-}
-
+import { NotificationType } from '@prisma/client'; 
 
 export class CreateNotificationDto {
-  @IsString()
-  @IsNotEmpty()
-  userId: string;
-
   @IsString()
   @IsNotEmpty()
   message: string;

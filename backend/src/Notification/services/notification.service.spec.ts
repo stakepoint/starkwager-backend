@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationService } from './notification.service';
 import { PrismaService } from 'nestjs-prisma';
-
-import  { CreateNotificationDto, NotificationType } from '../dtos/notification.dto';
+import  { CreateNotificationDto } from '../dtos/notification.dto';
+import { NotificationType } from '@prisma/client'; 
 
 describe('NotificationService', () => {
   let service: NotificationService;
@@ -11,7 +11,7 @@ describe('NotificationService', () => {
   const mockNotification = {
     id: '1',
     message: 'Test Message',
-    type: NotificationType.GENERAL,
+    type: NotificationType.general,
     userId: '1',
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -47,10 +47,9 @@ describe('NotificationService', () => {
       const createNotificationDto: CreateNotificationDto = {
         message: mockNotification.message,
         type: mockNotification.type,
-        userId: mockNotification.userId,
       };
 
-      const result = await service.createNotification(createNotificationDto);
+      const result = await service.createNotification('1', createNotificationDto);
       expect(prisma.notification.create).toHaveBeenCalledWith({
         data: createNotificationDto,
       });

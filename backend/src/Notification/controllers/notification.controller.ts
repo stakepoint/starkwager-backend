@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { NotificationService } from '../services/notification.service';
 import { CreateNotificationDto } from '../dtos/notification.dto';
-import { CreateNotificationGuard } from '../guards/notification.guard';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 @ApiBearerAuth('JWT-AUTH')
@@ -21,17 +20,17 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Post('create')
-  @UseGuards(CreateNotificationGuard)
   create(@Body() data: CreateNotificationDto, @Req() req: Request) {
     const userId = req['user'].sub;
-    return this.notificationService.createNotification({ ...data });
+    return this.notificationService.createNotification(userId, { ...data });
   }
 
-  @Get(':userId/all')
+  @Get('all')
   findAll(
-    @Param('userId') userId: string,
-    @Query('isRead') isRead: boolean
+    @Req() req: Request,
+    @Query('isRead') isRead?: boolean,
   ) {
+    const userId = req['user'].sub;
     return this.notificationService.getNotifications(userId, isRead);
   }
   
@@ -45,8 +44,9 @@ export class NotificationController {
     return this.notificationService.deleteNotification(id);
   }
 
-  @Get(':userId/view/:id')
-  getNotification(@Param('id') id: string, @Param('userId') userId: string,) {
+  @Get(':id')
+  getNotification(@Param('id') id: string,    @Req() req: Request,) {
+    const userId = req['user'].sub;
     return this.notificationService.getANotification(id, userId);
   }
 
