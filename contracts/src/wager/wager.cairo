@@ -167,6 +167,12 @@ pub mod StrkWager {
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(!wager.resolved, 'Wager is already resolved');
+            if wager.mode == Mode::HeadToHead {
+                assert(
+                    self.wager_participants_count.entry(wager_id).read() == 1,
+                    'Wager has 2 participants'
+                );
+            }
             assert(self._has_sufficient_balance(wager.stake), 'Insufficient balance');
 
             let caller = get_caller_address();
