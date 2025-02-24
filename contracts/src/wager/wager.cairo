@@ -240,6 +240,8 @@ pub mod StrkWager {
 
             false
         }
+
+
         fn is_wager_participant(
             self: @ContractState, wager_id: u64, caller: ContractAddress,
         ) -> bool {

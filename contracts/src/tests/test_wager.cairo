@@ -10,7 +10,7 @@ use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
 };
 
 
@@ -43,13 +43,13 @@ fn test_set_escrow_address() {
                     StrkWager::Event::EscrowAddressUpdated(
                         StrkWager::EscrowAddressEvent {
                             old_address: contract_address_const::<
-                                0
+                                0,
                             >(), // Assuming initial address is zero
-                            new_address: new_address
-                        }
-                    )
-                )
-            ]
+                            new_address: new_address,
+                        },
+                    ),
+                ),
+            ],
         );
 
     let updated_address: ContractAddress = wager.get_escrow_address();
@@ -259,10 +259,10 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
                 (
                     wager.contract_address,
                     StrkWager::Event::WagerJoined(
-                        StrkWager::WagerJoinedEvent { wager_id, participant: owner }
-                    )
-                )
-            ]
+                        StrkWager::WagerJoinedEvent { wager_id, participant: owner },
+                    ),
+                ),
+            ],
         );
 }
 
@@ -321,10 +321,10 @@ fn test_join_wager_success_with_external_wallet_balance() {
                 (
                     wager.contract_address,
                     StrkWager::Event::WagerJoined(
-                        StrkWager::WagerJoinedEvent { wager_id, participant: owner }
-                    )
-                )
-            ]
+                        StrkWager::WagerJoinedEvent { wager_id, participant: owner },
+                    ),
+                ),
+            ],
         );
 }
 
@@ -438,8 +438,9 @@ fn test_wager_withdraw_from_wallet_success() {
     wager.withdraw_from_wallet(amount);
     assert(strk_dispatcher.balance_of(owner) == initial_balance, 'WITHDRAWAL FAILED');
     stop_cheat_caller_address(wager.contract_address);
+}
 
-    #[test]
+#[test]
 fn test_is_wager_participant_true() {
     let (wager, escrow, strk_dispatcher) = setup();
 
@@ -449,7 +450,10 @@ fn test_is_wager_participant_true() {
     wager.add_participant(1, participant); // Assuming wager_id is 1
 
     // Check if the participant is part of the wager
-    assert(wager.is_wager_participant(1, participant) == true, 'Participant should be part of the wager');
+    assert(
+        wager.is_wager_participant(1, participant) == true,
+        'Participant should be part of the wager',
+    );
 }
 
 #[test]
