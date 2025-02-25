@@ -5,7 +5,7 @@ import {
   IsEnum,
   IsBoolean,
 } from 'class-validator';
-import { NotificationType } from '@prisma/client'; 
+import { NotificationType } from '@prisma/client';
 
 export class CreateNotificationDto {
   @IsString()
@@ -21,5 +21,4 @@ export class CreateNotificationDto {
   @IsEnum(NotificationType)
   @IsOptional()
   type: NotificationType;
-
 }

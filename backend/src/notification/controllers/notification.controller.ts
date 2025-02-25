@@ -25,15 +25,12 @@ export class NotificationController {
   }
 
   @Get('all')
-  findAll(
-    @Req() req: Request,
-    @Query('isRead') isRead?: boolean,
-  ) {
+  findAll(@Req() req: Request, @Query('isRead') isRead?: boolean) {
     const userId = req['user'].sub;
     return this.notificationService.getNotifications(userId, isRead);
   }
-  
- @Patch(':id/read')
+
+  @Patch(':id/read')
   markAsRead(@Param('id') id: string) {
     return this.notificationService.markAsRead(id);
   }
@@ -44,9 +41,8 @@ export class NotificationController {
   }
 
   @Get(':id')
-  getNotification(@Param('id') id: string,    @Req() req: Request,) {
+  getNotification(@Param('id') id: string, @Req() req: Request) {
     const userId = req['user'].sub;
     return this.notificationService.getANotification(id, userId);
   }
-
 }
