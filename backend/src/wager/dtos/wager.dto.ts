@@ -6,6 +6,7 @@ import {
   IsPositive,
   IsEnum,
 } from 'class-validator';
+import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
 
 enum WagerStatus {
   PENDING = 'pending',
@@ -47,7 +48,7 @@ export class CreateWagerDto {
   hashtags?: string[];
 }
 
-export class GetWagersQueryDto {
+export class GetWagersQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(WagerStatus, {
     message: `Invalid status. Valid values are: ${Object.values(WagerStatus).join(', ')}`,

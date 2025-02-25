@@ -7,11 +7,13 @@ import {
   UseGuards,
   Req,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { WagerService } from '../services/wager.service';
 import { CreateWagerDto, GetWagersQueryDto } from '../dtos/wager.dto';
 import { CreateWagerGuard } from '../guards/wager.guard';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { PaginationInterceptor } from 'src/common/decorators/pagination.decorator';
 
 @ApiBearerAuth('JWT-AUTH')
 @Controller('wager')
@@ -37,12 +39,28 @@ export class WagerController {
     description:
       'Filter type: AND (wagers must contain all hashtags) or OR (wagers must contain at least one hashtag)',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page (default: 10)',
+  })
   @Get('all')
-  findAll(@Query() query: GetWagersQueryDto) {
+  @UseInterceptors(PaginationInterceptor)
+  findAll(@Query() query: GetWagersQueryDto, @Req() request: Request) {
+    const { page, limit } = request['pagination'];
     return this.wagerService.getAllWagers(
       query.status,
       query.hashtags,
       query.filterType,
+      page,
+      limit,
     );
   }
 

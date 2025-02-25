@@ -21,7 +21,15 @@ export class WagerService {
     status: WagerStatus,
     hashtags?: string,
     filterType: 'AND' | 'OR' = 'OR',
+    page?: number,
+    limit?: number,
   ) {
+    /**
+     * use default values if not provided but this is unlikely
+     * to happen as we already default the values
+     */
+    page = page ?? 1;
+    limit = limit ?? 10;
     const hashtagList = hashtags ? hashtags.split(',') : [];
 
     const query: any = {
@@ -31,6 +39,8 @@ export class WagerService {
       include: {
         hashtags: true,
       },
+      skip: (page - 1) * limit,
+      take: limit,
     };
 
     if (hashtagList.length > 0) {
