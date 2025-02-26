@@ -12,8 +12,10 @@ import {
 import { WagerService } from '../services/wager.service';
 import { CreateWagerDto, GetWagersQueryDto } from '../dtos/wager.dto';
 import { CreateWagerGuard } from '../guards/wager.guard';
-import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { SwaggerWagerApiQuery } from '../../common/decorators/swagger.decorator';
 import { PaginationInterceptor } from 'src/common/decorators/pagination.decorator';
+import { paginate } from 'src/common/utils/paginate';
 
 @ApiBearerAuth('JWT-AUTH')
 @Controller('wager')
@@ -27,41 +29,19 @@ export class WagerController {
     return this.wagerService.createWager({ ...data, createdById: userId });
   }
 
-  @ApiQuery({
-    name: 'hashtags',
-    required: false,
-    description: 'Comma-separated list of hashtags to filter by',
-  })
-  @ApiQuery({
-    name: 'filterType',
-    required: false,
-    enum: ['AND', 'OR'],
-    description:
-      'Filter type: AND (wagers must contain all hashtags) or OR (wagers must contain at least one hashtag)',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number (default: 1)',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Number of items per page (default: 10)',
-  })
+  @SwaggerWagerApiQuery()
   @Get('all')
   @UseInterceptors(PaginationInterceptor)
-  findAll(@Query() query: GetWagersQueryDto, @Req() request: Request) {
+  async findAll(@Query() query: GetWagersQueryDto, @Req() request: Request) {
     const { page, limit } = request['pagination'];
-    return this.wagerService.getAllWagers(
+    const { data, total } = await this.wagerService.getAllWagers(
       query.status,
       query.hashtags,
       query.filterType,
       page,
       limit,
     );
+    return paginate(data, total, page, limit);
   }
 
   @Get('view/:id')

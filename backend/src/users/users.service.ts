@@ -58,14 +58,17 @@ export class UsersService {
       where: { id: userId },
       data: {
         username,
-        picture
+        picture,
       },
     });
 
     return updatedUser;
   }
 
-  async updateAvatar(userId: string, updateAvatarDto: UpdateAvatarDto): Promise<User> {
+  async updateAvatar(
+    userId: string,
+    updateAvatarDto: UpdateAvatarDto,
+  ): Promise<User> {
     const { picture } = updateAvatarDto;
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
