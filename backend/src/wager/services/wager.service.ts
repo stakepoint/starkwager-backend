@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import WagerStatus, { CreateWagerDto } from '../dtos/wager.dto';
+import { Wager } from '@prisma/client';
 
 @Injectable()
 export class WagerService {
@@ -21,7 +22,9 @@ export class WagerService {
     status: WagerStatus,
     hashtags?: string,
     filterType: 'AND' | 'OR' = 'OR',
-  ) {
+    page?: number,
+    limit?: number,
+  ): Promise<{ data: Wager[]; total: number }> {
     const hashtagList = hashtags ? hashtags.split(',') : [];
 
     const query: any = {
@@ -31,6 +34,8 @@ export class WagerService {
       include: {
         hashtags: true,
       },
+      skip: (page - 1) * limit,
+      take: limit,
     };
 
     if (hashtagList.length > 0) {
@@ -53,7 +58,11 @@ export class WagerService {
       }
     }
 
-    return await this.prisma.wager.findMany(query);
+    const total = await this.prisma.wager.count({ where: query.where });
+
+    const data = await this.prisma.wager.findMany(query);
+
+    return { data, total };
   }
 
   async findOneById(id: string) {
