@@ -14,49 +14,51 @@ datasource db {
 }
 
 model Category {
-  id          String    @id @default(uuid())
-  name        String    @unique
+  id          String   @id @default(uuid())
+  name        String   @unique
   description String?
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
   wagers      Wager[]
 
   @@map("categories")
 }
 
 model Wager {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   description String
-  categoryId  String    @map("category_id")
+  categoryId  String   @map("category_id")
   tags        String[]
-  stakeAmount Float     @map("stake_amount")
-  status    String   @default("pending")
-  createdById String    @map("created_by")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  stakeAmount Float    @map("stake_amount")
+  status      String   @default("pending")
+  createdById String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relationships
-  category   Category @relation(fields: [categoryId], references: [id])
-  createdBy  User     @relation(fields: [createdById], references: [id])
+  category    Category     @relation(fields: [categoryId], references: [id])
+  createdBy   User         @relation(fields: [createdById], references: [id])
   invitations Invitation[]
+  WagerClaim  WagerClaim?
 
   @@map("wagers")
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String?  @unique 
-  username   String?  @unique @db.Citext
-  address    String   @unique
-  picture    String?
-  isVerified Boolean  @default(false)
-  roles       Role     @default(User) // Set default role to 'User'
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  wagers      Wager[]
-  sentInvitations Invitation[] @relation("SentInvitations")
+  id                  String       @id @default(uuid())
+  email               String?      @unique
+  username            String?      @unique @db.Citext
+  address             String       @unique
+  picture             String?
+  isVerified          Boolean      @default(false)
+  roles               Role         @default(User) // Set default role to 'User'
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+  wagers              Wager[]
+  sentInvitations     Invitation[] @relation("SentInvitations")
   receivedInvitations Invitation[] @relation("ReceivedInvitations")
+  WagerClaim          WagerClaim[]
 
   @@map("users")
 }
@@ -71,7 +73,7 @@ model Hashtag {
   name      String   @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @map("updated_at")
-  
+
   @@map("hashtags")
 }
 
@@ -80,14 +82,46 @@ model Invitation {
   wagerId         String   @map("wager_id")
   invitedById     String   @map("invited_by_id")
   invitedUsername String   @map("invited_username") @db.Citext
-  status          String   @default("pending") 
+  status          String   @default("pending")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
-  
+
   // Relationships
-  wager      Wager @relation(fields: [wagerId], references: [id])
-  invitedBy  User  @relation(fields: [invitedById], references: [id], name: "SentInvitations")
-  invitedUser User @relation(fields: [invitedUsername], references: [username], name: "ReceivedInvitations")
+  wager       Wager @relation(fields: [wagerId], references: [id])
+  invitedBy   User  @relation(fields: [invitedById], references: [id], name: "SentInvitations")
+  invitedUser User  @relation(fields: [invitedUsername], references: [username], name: "ReceivedInvitations")
 
   @@map("invitations")
+}
+
+model WagerClaim {
+  id          String   @id @default(uuid())
+  wagerId     String   @unique @map("wager_id")
+  claimedById String   @map("claimed_by")
+  status      String   @default("pending")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  wager            Wager             @relation(fields: [wagerId], references: [id])
+  claimedBy        User              @relation(fields: [claimedById], references: [id])
+  RejectWagerClaim RejectWagerClaim?
+
+  @@map("wager_claims")
+}
+
+model RejectWagerClaim {
+  id           String   @id @default(uuid())
+  wagerClaimId String   @unique @map("wager_claim_id")
+  status       String   @default("rejected")
+  reason       String
+  proofLink    String?  @map("proof_link") // Optional link proof
+  proofFile    String?  @map("proof_file") // Optional file (image or PDF)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  wagerClaim WagerClaim @relation(fields: [wagerClaimId], references: [id])
+
+  @@map("reject_wager_claims")
 }

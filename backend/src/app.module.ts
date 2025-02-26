@@ -14,6 +14,7 @@ import { CategoryModule } from './category/category.module';
 import { WagerModule } from './wager/wager.module';
 import { HashtagsModule } from './hashtags/hashtags.module';
 import { InvitationModule } from './wagerInvitations/wagerInvitations.module';
+import { WagerClaimModule } from './wager-claim/wager-claim.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { InvitationModule } from './wagerInvitations/wagerInvitations.module';
         ],
       },
     }),
+    WagerClaimModule,
   ],
   controllers: [AppController],
   providers: [
