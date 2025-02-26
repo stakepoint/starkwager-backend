@@ -1,18 +1,23 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
   Req,
+  UseInterceptors,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { User } from '@prisma/client';
+import { PaginationInterceptor } from 'src/common/decorators/pagination.decorator';
+import { paginate } from 'src/common/utils/paginate';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUsernameDto } from './dto/update-username.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
+import { UpdateUsernameDto } from './dto/update-username.dto';
+import { UsersService } from './users.service';
 
 @ApiBearerAuth('JWT-AUTH')
 @Controller('users')
@@ -25,8 +30,20 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  @UseInterceptors(PaginationInterceptor)
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async findAll(@Query() query: User, @Req() request: Request) {
+    const { page, limit } = request['pagination'];
+    const filters = { ...query };
+
+    const { data, total } = await this.usersService.findAll(
+      page,
+      limit,
+      Object.keys(filters).length > 0 ? filters : undefined,
+    );
+
+    return paginate(data, total, page, limit);
   }
 
   @Get(':id')
