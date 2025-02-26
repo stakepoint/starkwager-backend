@@ -41,6 +41,7 @@ model Wager {
   createdBy   User         @relation(fields: [createdById], references: [id])
   invitations Invitation[]
   WagerClaim  WagerClaim?
+  hashtags    Hashtag[]
 
   @@map("wagers")
 }
@@ -59,6 +60,7 @@ model User {
   sentInvitations     Invitation[] @relation("SentInvitations")
   receivedInvitations Invitation[] @relation("ReceivedInvitations")
   WagerClaim          WagerClaim[]
+  notifications Notification[]  
 
   @@map("users")
 }
@@ -68,11 +70,19 @@ enum Role {
   Admin
 }
 
+enum NotificationType {
+  invitation
+  general
+  wager_update
+}
+
+
 model Hashtag {
   id        String   @id @default(uuid())
   name      String   @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @map("updated_at")
+  wagers    Wager[]
 
   @@map("hashtags")
 }
@@ -124,4 +134,16 @@ model RejectWagerClaim {
   wagerClaim WagerClaim @relation(fields: [wagerClaimId], references: [id])
 
   @@map("reject_wager_claims")
+}
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String
+  type       NotificationType
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("notifications")
 }

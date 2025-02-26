@@ -43,8 +43,8 @@ export class CreateWagerDto {
   createdById: string;
 
   @IsOptional()
-  @IsString({ each: true }) // Ensures all elements in the array are strings
-  tags?: string[];
+  @IsString({ each: true })
+  hashtags?: string[];
 }
 
 export class GetWagersQueryDto {
@@ -53,4 +53,12 @@ export class GetWagersQueryDto {
     message: `Invalid status. Valid values are: ${Object.values(WagerStatus).join(', ')}`,
   })
   status?: WagerStatus;
+
+  @IsOptional()
+  @IsString()
+  hashtags?: string;
+
+  @IsOptional()
+  @IsString()
+  filterType?: 'AND' | 'OR';
 }

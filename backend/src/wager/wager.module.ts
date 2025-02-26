@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { WagerService } from './services/wager.service';
 import { WagerController } from './controllers/wager.controller';
-import { CategoryService } from 'src/category/services/category.service';
+import { CategoryService } from '../category/services/category.service';
 
 @Global()
 @Module({
