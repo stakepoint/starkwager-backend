@@ -27,27 +27,14 @@ export class UsersService {
   async findAll(
     page?: number,
     limit?: number,
-    filters?: Record<string, any>,
   ): Promise<{ data: User[]; total: number }> {
     const query: any = {
-      where: {},
+      skip: (page - 1) * limit,
+      take: limit,
     };
 
-    if (filters) {
-      query.where = { ...filters };
-    }
-
-    if (page !== undefined && limit !== undefined) {
-      query.skip = (page - 1) * limit;
-      query.take = limit;
-    }
-
-    const total = await this.prisma.user.count({
-      where: query.where,
-    });
-
+    const total = await this.prisma.user.count();
     const data = await this.prisma.user.findMany(query);
-
     return { data, total };
   }
 

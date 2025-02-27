@@ -6,14 +6,13 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { User } from '@prisma/client';
 import { PaginationInterceptor } from 'src/common/decorators/pagination.decorator';
 import { paginate } from 'src/common/utils/paginate';
+import { SwaggerWagerApiQuery } from '../common/decorators/swagger.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
@@ -29,19 +28,12 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @SwaggerWagerApiQuery()
   @Get()
   @UseInterceptors(PaginationInterceptor)
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  async findAll(@Query() query: User, @Req() request: Request) {
+  async findAll(@Req() request: Request) {
     const { page, limit } = request['pagination'];
-    const filters = { ...query };
-
-    const { data, total } = await this.usersService.findAll(
-      page,
-      limit,
-      Object.keys(filters).length > 0 ? filters : undefined,
-    );
+    const { data, total } = await this.usersService.findAll(page, limit);
 
     return paginate(data, total, page, limit);
   }

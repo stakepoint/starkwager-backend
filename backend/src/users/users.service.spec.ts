@@ -84,7 +84,6 @@ describe('UsersService', () => {
 
       const result = await service.findAll(1, 10);
       expect(prisma.user.findMany).toHaveBeenCalledWith({
-        where: {},
         skip: 0,
         take: 10,
       });
@@ -99,7 +98,7 @@ describe('UsersService', () => {
       jest.spyOn(prisma.user, 'count').mockResolvedValue(1);
 
       const filters = { email: 'test@example.com' };
-      const result = await service.findAll(1, 10, filters);
+      const result = await service.findAll(1, 10);
 
       expect(prisma.user.findMany).toHaveBeenCalledWith({
         where: filters,
