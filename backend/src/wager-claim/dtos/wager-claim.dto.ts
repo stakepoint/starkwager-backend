@@ -29,7 +29,7 @@ export class RejectWagerClaimDto {
   @IsString()
   @IsUUID()
   @IsNotEmpty()
-  wagerClaimId: string;
+  id: string;
 
   @IsString()
   @IsNotEmpty()

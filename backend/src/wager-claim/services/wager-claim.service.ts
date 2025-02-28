@@ -82,7 +82,7 @@ export class WagerClaimService {
   }
 
   async rejectClaim(dto: RejectWagerClaimDto) {
-    const { wagerClaimId, reason, status, proofLink, proofFile } = dto;
+    const { id, reason, status, proofLink, proofFile } = dto;
 
     if (!proofLink && !proofFile) {
       throw new BadRequestException('Proof link or file is required');
@@ -93,7 +93,7 @@ export class WagerClaimService {
     }
 
     const wagerClaim = await this.prisma.wagerClaim.findUnique({
-      where: { id: wagerClaimId },
+      where: { id },
     });
 
     if (!wagerClaim) {
@@ -104,9 +104,10 @@ export class WagerClaimService {
       throw new BadRequestException('Only pending claims can be rejected');
     }
 
-    const rejectWagerClaim = await this.prisma.rejectWagerClaim.create({
+    const updatedWagerClaim = await this.prisma.wagerClaim.update({
+      where: { id },
       data: {
-        wagerClaimId,
+        id,
         reason,
         status,
         proofLink,
@@ -114,14 +115,7 @@ export class WagerClaimService {
       },
     });
 
-    await this.prisma.wagerClaim.update({
-      where: { id: wagerClaim.id },
-      data: {
-        status: 'rejected',
-      },
-    });
-
-    return rejectWagerClaim;
+    return updatedWagerClaim;
   }
 
   private isValidUrl(url: string): boolean {

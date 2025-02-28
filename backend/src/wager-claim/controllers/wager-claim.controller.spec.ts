@@ -3,7 +3,7 @@ import { WagerClaimController } from './wager-claim.controller';
 import { WagerClaimService } from '../services/wager-claim.service';
 import { CreateWagerClaimDto } from '../dtos/wager-claim.dto';
 import { BadRequestException } from '@nestjs/common';
-import { RejectWagerClaim } from '@prisma/client';
+import { WagerClaim } from '@prisma/client';
 
 describe('WagerClaimController', () => {
   let controller: WagerClaimController;
@@ -86,11 +86,12 @@ describe('WagerClaimController', () => {
   });
 
   it('should call service and reject a claim', async () => {
-    const dto: RejectWagerClaim = {
+    const dto: WagerClaim = {
       id: '1',
-      wagerClaimId: '1',
       reason: 'Invalid claim',
       proofFile: null,
+      wagerId: null,
+      claimedById: null,
       proofLink: 'https://example.com/proof',
       status: 'rejected',
       createdAt: new Date(),
@@ -107,11 +108,12 @@ describe('WagerClaimController', () => {
   });
 
   it('should throw an error if reject wager claim service throws', async () => {
-    const dto: RejectWagerClaim = {
+    const dto: WagerClaim = {
       id: '1',
-      wagerClaimId: '1',
       reason: 'Invalid claim',
       proofFile: null,
+      wagerId: null,
+      claimedById: null,
       proofLink: 'https://example.com/proof',
       status: 'rejected',
       createdAt: new Date(),

@@ -16,9 +16,6 @@ describe('WagerClaimService', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
-    rejectWagerClaim: {
-      create: jest.fn(),
-    },
   };
 
   beforeEach(async () => {
@@ -178,7 +175,7 @@ describe('WagerClaimService', () => {
 
   it('should reject a claim with a valid proofLink', async () => {
     const dto = {
-      wagerClaimId: '1',
+      id: '1',
       reason: 'Not valid',
       status: 'rejected',
       proofLink: 'https://proof-link.com',
@@ -189,18 +186,15 @@ describe('WagerClaimService', () => {
       id: '1',
       status: 'pending',
     });
-    mockPrismaService.rejectWagerClaim.create.mockResolvedValue({
-      id: '1',
-      ...dto,
-    });
+    mockPrismaService.wagerClaim.update.mockResolvedValue(dto);
 
     const result = await service.rejectClaim(dto);
-    expect(result).toEqual({ id: '1', ...dto });
+    expect(result).toEqual(dto);
   });
 
   it('should throw an error if no proofLink or proofFile is provided', async () => {
     const dto = {
-      wagerClaimId: '1',
+      id: '1',
       reason: 'Not valid',
       status: 'rejected',
       proofLink: null,
@@ -212,7 +206,7 @@ describe('WagerClaimService', () => {
 
   it('should throw an error if proofLink is invalid', async () => {
     const dto = {
-      wagerClaimId: '1',
+      id: '1',
       reason: 'Not valid',
       status: 'rejected',
       proofLink: 'invalid-link',
@@ -224,7 +218,7 @@ describe('WagerClaimService', () => {
 
   it('should throw an error if claim is not found', async () => {
     const dto = {
-      wagerClaimId: '1',
+      id: '1',
       reason: 'Not valid',
       status: 'rejected',
       proofLink: 'https://proof-link.com',
@@ -236,7 +230,7 @@ describe('WagerClaimService', () => {
 
   it('should throw an error if wager claim status is not pending', async () => {
     const dto = {
-      wagerClaimId: '1',
+      id: '1',
       reason: 'Not valid',
       status: 'rejected',
       proofLink: 'https://proof-link.com',

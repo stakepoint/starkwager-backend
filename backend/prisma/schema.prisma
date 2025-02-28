@@ -47,20 +47,20 @@ model Wager {
 }
 
 model User {
-  id                  String       @id @default(uuid())
-  email               String?      @unique
-  username            String?      @unique @db.Citext
-  address             String       @unique
+  id                  String         @id @default(uuid())
+  email               String?        @unique
+  username            String?        @unique @db.Citext
+  address             String         @unique
   picture             String?
-  isVerified          Boolean      @default(false)
-  roles               Role         @default(User) // Set default role to 'User'
-  createdAt           DateTime     @default(now()) @map("created_at")
-  updatedAt           DateTime     @updatedAt @map("updated_at")
+  isVerified          Boolean        @default(false)
+  roles               Role           @default(User) // Set default role to 'User'
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
   wagers              Wager[]
-  sentInvitations     Invitation[] @relation("SentInvitations")
-  receivedInvitations Invitation[] @relation("ReceivedInvitations")
+  sentInvitations     Invitation[]   @relation("SentInvitations")
+  receivedInvitations Invitation[]   @relation("ReceivedInvitations")
   WagerClaim          WagerClaim[]
-  notifications Notification[]  
+  notifications       Notification[]
 
   @@map("users")
 }
@@ -75,7 +75,6 @@ enum NotificationType {
   general
   wager_update
 }
-
 
 model Hashtag {
   id        String   @id @default(uuid())
@@ -106,44 +105,32 @@ model Invitation {
 
 model WagerClaim {
   id          String   @id @default(uuid())
-  wagerId     String   @unique @map("wager_id")
-  claimedById String   @map("claimed_by")
-  status      String   @default("pending")
+  wagerId     String?  @unique @map("wager_id")
+  claimedById String?  @map("claimed_by")
+  status      String?  @default("pending")
+  reason      String?
+  proofLink   String?  @map("proof_link") // Optional link proof
+  proofFile   String?  @map("proof_file") // Optional file (image or PDF)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relationships
-  wager            Wager             @relation(fields: [wagerId], references: [id])
-  claimedBy        User              @relation(fields: [claimedById], references: [id])
-  RejectWagerClaim RejectWagerClaim?
+  wager     Wager? @relation(fields: [wagerId], references: [id])
+  claimedBy User?  @relation(fields: [claimedById], references: [id])
 
   @@map("wager_claims")
 }
 
-model RejectWagerClaim {
-  id           String   @id @default(uuid())
-  wagerClaimId String   @unique @map("wager_claim_id")
-  status       String   @default("rejected")
-  reason       String
-  proofLink    String?  @map("proof_link") // Optional link proof
-  proofFile    String?  @map("proof_file") // Optional file (image or PDF)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relationships
-  wagerClaim WagerClaim @relation(fields: [wagerClaimId], references: [id])
-
-  @@map("reject_wager_claims")
-}
 model Notification {
-  id         String   @id @default(uuid())
-  userId     String
-  type       NotificationType
-  message    String
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("notifications")
 }

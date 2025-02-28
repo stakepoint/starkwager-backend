@@ -1,7 +1,7 @@
 import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
 import { WagerClaimService } from '../services/wager-claim.service';
 import { CreateWagerClaimDto } from '../dtos/wager-claim.dto';
-import { RejectWagerClaim } from '@prisma/client';
+import { WagerClaim } from '@prisma/client';
 
 @Controller('wager-claim')
 export class WagerClaimController {
@@ -18,7 +18,7 @@ export class WagerClaimController {
   }
 
   @Post('reject')
-  async reject(@Body() dto: RejectWagerClaim) {
+  async reject(@Body() dto: WagerClaim) {
     return this.wagerClaimService.rejectClaim(dto);
   }
 }
