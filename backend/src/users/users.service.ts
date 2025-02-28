@@ -28,7 +28,7 @@ export class UsersService {
     page?: number,
     limit?: number,
   ): Promise<{ data: User[]; total: number }> {
-    const query: any = {
+    const query = {
       skip: (page - 1) * limit,
       take: limit,
     };

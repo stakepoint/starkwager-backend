@@ -9,7 +9,7 @@ import {
   Req,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { PaginationInterceptor } from 'src/common/decorators/pagination.decorator';
 import { paginate } from 'src/common/utils/paginate';
 import { SwaggerWagerApiQuery } from '../common/decorators/swagger.decorator';
