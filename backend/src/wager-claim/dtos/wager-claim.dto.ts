@@ -1,23 +1,11 @@
-import { IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
-
-enum WagerClaimStatus {
-  PENDING = 'pending',
-  ACCEPTED = 'accepted',
-  REJECTED = 'rejected',
-}
-
-export default WagerClaimStatus;
+import { IsEnum, IsNotEmpty, IsString, IsUrl, IsUUID } from 'class-validator';
+import { WagerClaimStatus } from 'src/common/enums/status.enums';
 
 export class CreateWagerClaimDto {
   @IsString()
   @IsUUID()
   @IsNotEmpty()
   wagerId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @IsUUID()
-  claimedById: string;
 
   @IsString()
   @IsNotEmpty()
@@ -41,8 +29,10 @@ export class RejectWagerClaimDto {
   status: string;
 
   @IsString()
+  @IsUrl()
   proofLink: string;
 
   @IsString()
+  @IsUrl()
   proofFile: string;
 }

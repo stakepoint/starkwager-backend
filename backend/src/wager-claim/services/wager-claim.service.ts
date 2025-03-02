@@ -4,13 +4,14 @@ import {
   CreateWagerClaimDto,
   RejectWagerClaimDto,
 } from '../dtos/wager-claim.dto';
+import { WagerClaimStatus, WagerStatus } from 'src/common/enums/status.enums';
 
 @Injectable()
 export class WagerClaimService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createClaim(dto: CreateWagerClaimDto) {
-    const { wagerId, claimedById, status } = dto;
+  async createClaim(dto: CreateWagerClaimDto, claimedById: string) {
+    const { wagerId } = dto;
 
     const wager = await this.prisma.wager.findUnique({
       where: { id: wagerId },
@@ -20,7 +21,7 @@ export class WagerClaimService {
       throw new BadRequestException('Wager not found');
     }
 
-    if (wager.status !== 'active') {
+    if (wager.status !== WagerStatus.ACTIVE) {
       throw new BadRequestException('Only active wagers can be claimed');
     }
 
@@ -36,14 +37,14 @@ export class WagerClaimService {
       data: {
         wagerId,
         claimedById,
-        status,
+        status: WagerClaimStatus.PENDING,
       },
     });
 
     return claim;
   }
 
-  async acceptClaim(claimId: string) {
+  async acceptClaim(claimId: string, userId: string) {
     const claim = await this.prisma.wagerClaim.findUnique({
       where: { id: claimId },
     });
@@ -51,6 +52,15 @@ export class WagerClaimService {
     if (!claim) {
       throw new BadRequestException('Claim not found');
     }
+
+    // Check so The user that create the claim can't accept it.
+    if (claim.claimedById === userId) {
+      throw new BadRequestException(
+        'You are not authorized to accept this claim as you are the creator',
+      );
+    }
+
+    //Todo: Make sure is only the other invited user that can accept this claim
 
     const wager = await this.prisma.wager.findUnique({
       where: { id: claim.wagerId },
@@ -60,37 +70,29 @@ export class WagerClaimService {
       throw new BadRequestException('Wager not found');
     }
 
-    if (wager.status !== 'active') {
+    if (wager.status !== WagerStatus.ACTIVE) {
       throw new BadRequestException('Only active wagers can be claimed');
     }
 
     await this.prisma.wager.update({
       where: { id: wager.id },
       data: {
-        status: 'completed',
+        status: WagerStatus.COMPLETED,
       },
     });
 
     const updatedClaim = await this.prisma.wagerClaim.update({
       where: { id: claim.id },
       data: {
-        status: 'accepted',
+        status: WagerClaimStatus.ACCEPTED,
       },
     });
 
     return updatedClaim;
   }
 
-  async rejectClaim(dto: RejectWagerClaimDto) {
-    const { id, reason, status, proofLink, proofFile } = dto;
-
-    if (!proofLink && !proofFile) {
-      throw new BadRequestException('Proof link or file is required');
-    }
-
-    if (proofLink && !this.isValidUrl(proofLink)) {
-      throw new BadRequestException('Invalid proof link');
-    }
+  async rejectClaim(dto: RejectWagerClaimDto, userId: string) {
+    const { id, reason, proofLink, proofFile } = dto;
 
     const wagerClaim = await this.prisma.wagerClaim.findUnique({
       where: { id },
@@ -100,7 +102,16 @@ export class WagerClaimService {
       throw new BadRequestException('WagerClaim not found');
     }
 
-    if (wagerClaim.status !== 'pending') {
+    // Check so The user that create the claim can't reject it.
+    if (wagerClaim.claimedById !== userId) {
+      throw new BadRequestException(
+        'You are not authorized to reject this claim',
+      );
+    }
+
+    //Todo: Make sure is only the other invited user that can accept this claim
+
+    if (wagerClaim.status !== WagerClaimStatus.PENDING) {
       throw new BadRequestException('Only pending claims can be rejected');
     }
 
@@ -109,21 +120,12 @@ export class WagerClaimService {
       data: {
         id,
         reason,
-        status,
+        status: WagerClaimStatus.REJECTED,
         proofLink,
         proofFile,
       },
     });
 
     return updatedWagerClaim;
-  }
-
-  private isValidUrl(url: string): boolean {
-    try {
-      new URL(url);
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 }
