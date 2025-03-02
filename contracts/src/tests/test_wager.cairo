@@ -486,3 +486,46 @@ fn test_join_wager_head_to_head_full() {
     wager.join_wager(wager_id); // Should panic here
     stop_cheat_caller_address(wager.contract_address);
 }
+
+#[test]
+fn test_is_wager_participant() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    let mut spy = spy_events();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+
+    let owner = OWNER();
+    let bob = BOB();
+
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id);
+    stop_cheat_caller_address(wager.contract_address);
+
+    assert(wager.is_wager_participant(wager_id, owner), 'owner is a participant');
+    assert(wager.is_wager_participant(wager_id, bob), 'bob is a participant');
+    assert(!wager.is_wager_participant(wager_id, ALICE()), 'alice is non participant');
+}
