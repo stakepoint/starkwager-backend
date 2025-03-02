@@ -19,7 +19,7 @@ export class WagerClaimController {
     return this.wagerClaimService.acceptClaim(id, userId);
   }
 
-  @Post('reject')
+  @Patch('reject')
   async reject(@Body() dto: WagerClaim, @Req() req: Request) {
     const userId = req['user'].sub;
     return this.wagerClaimService.rejectClaim(dto, userId);
