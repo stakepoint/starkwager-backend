@@ -15,6 +15,7 @@ import { WagerModule } from './wager/wager.module';
 import { HashtagsModule } from './hashtags/hashtags.module';
 import { InvitationModule } from './wagerInvitations/wagerInvitations.module';
 import { NotificationModule } from './notification/notification.module';
+import { IndexerModule } from './indexer/indexer.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { NotificationModule } from './notification/notification.module';
         ],
       },
     }),
+    IndexerModule,
   ],
   controllers: [AppController],
   providers: [
