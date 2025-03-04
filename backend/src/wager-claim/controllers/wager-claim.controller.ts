@@ -9,7 +9,7 @@ export class WagerClaimController {
 
   @Post()
   async create(@Body() dto: CreateWagerClaimDto, @Req() req: Request) {
-    const claimedById = req['user'].sub;
+    const claimedById = req['user'].sub as any;
     return this.wagerClaimService.createClaim(dto, claimedById);
   }
 

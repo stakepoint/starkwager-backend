@@ -4,7 +4,7 @@ import {
   CreateWagerClaimDto,
   RejectWagerClaimDto,
 } from '../dtos/wager-claim.dto';
-import { WagerClaimStatus, WagerStatus } from 'src/common/enums/status.enums';
+import { WagerClaimStatus, WagerStatus } from '../../common/enums/status.enums';
 
 @Injectable()
 export class WagerClaimService {
@@ -103,7 +103,7 @@ export class WagerClaimService {
     }
 
     // Check so The user that create the claim can't reject it.
-    if (wagerClaim.claimedById !== userId) {
+    if (wagerClaim.claimedById === userId) {
       throw new BadRequestException(
         'You are not authorized to reject this claim',
       );

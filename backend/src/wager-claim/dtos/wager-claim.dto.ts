@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsString, IsUrl, IsUUID } from 'class-validator';
-import { WagerClaimStatus } from 'src/common/enums/status.enums';
+import { WagerClaimStatus } from '../../common/enums/status.enums';
 
 export class CreateWagerClaimDto {
   @IsString()
