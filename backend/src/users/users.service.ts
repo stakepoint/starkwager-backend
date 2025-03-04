@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from 'nestjs-prisma';
+import { CreateUserDto } from './dto/create-user.dto';
 
 import { User } from '@prisma/client';
-import { UpdateUsernameDto } from './dto/update-username.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
+import { UpdateUsernameDto } from './dto/update-username.dto';
 
 @Injectable()
 export class UsersService {
@@ -24,8 +24,18 @@ export class UsersService {
     return newUser;
   }
 
-  async findAll() {
-    return this.prisma.user.findMany();
+  async findAll(
+    page?: number,
+    limit?: number,
+  ): Promise<{ data: User[]; total: number }> {
+    const query = {
+      skip: (page - 1) * limit,
+      take: limit,
+    };
+
+    const total = await this.prisma.user.count();
+    const data = await this.prisma.user.findMany(query);
+    return { data, total };
   }
 
   async findOne(id: string) {

@@ -121,7 +121,30 @@ pub mod Escrow {
             self.user_balance.entry(address).read()
         }
 
-        //TODO
-        fn fund_wager(self: @ContractState, wager_id: u64, amount: u256) {}
+        fn fund_wager(
+            ref self: ContractState, wager_id: u64, address: ContractAddress, amount: u256
+        ) {
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
+
+            // Validate inputs
+            assert(!address.is_zero(), 'Invalid address');
+            assert(amount > 0, 'Amount must be positive');
+
+            // Check if user has sufficient balance
+            let user_balance = self.get_balance(address);
+            assert(user_balance >= amount, 'Insufficient balance');
+
+            // Update user balance first to prevent reentrancy
+            self.user_balance.entry(address).write(user_balance - amount);
+
+            // Update wager stake
+            let current_stake = self.wager_stake.entry(wager_id).read();
+            self.wager_stake.entry(wager_id).write(current_stake + amount);
+        }
+
+        fn get_wager_stake(self: @ContractState, wager_id: u64) -> u256 {
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
+            self.wager_stake.entry(wager_id).read()
+        }
     }
 }

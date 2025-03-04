@@ -134,3 +134,34 @@ model Notification {
 
   @@map("notifications")
 }
+
+
+model IndexerCursor {
+  id        Int      @id @default(autoincrement())
+  orderKey  Int      @unique
+  uniqueKey String   @unique
+  events    IndexerEvent[]
+  messages  IndexerMessage[] @relation("MessageCursor")
+  endMessages IndexerMessage[] @relation("MessageEndCursor")
+}
+
+model IndexerEvent {
+  id          Int      @id @default(autoincrement())
+  fromAddress String
+  keys        String[]
+  data        String[]
+  cursorId    Int
+  cursor      IndexerCursor @relation(fields: [cursorId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model IndexerMessage {
+  id          Int      @id @default(autoincrement())
+  cursorId    Int
+  endCursorId Int
+  finality    String
+  batch       Json
+  cursor      IndexerCursor @relation("MessageCursor", fields: [cursorId], references: [id])
+  endCursor   IndexerCursor @relation("MessageEndCursor", fields: [endCursorId], references: [id])
+  createdAt   DateTime @default(now())
+}

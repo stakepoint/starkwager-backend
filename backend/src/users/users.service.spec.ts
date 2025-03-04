@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from './users.service';
-import { PrismaService } from 'nestjs-prisma';
 import { User } from '@prisma/client';
+import { PrismaService } from 'nestjs-prisma';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
+import { UsersService } from './users.service';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -64,16 +64,51 @@ describe('UsersService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of users', async () => {
-      const result = await service.findAll();
-      expect(prisma.user.findMany).toHaveBeenCalled();
-      expect(result).toEqual([mockUser]);
-    });
-    it('should return an empty array if no users exist', async () => {
-      jest.spyOn(prisma.user, 'findMany').mockResolvedValue([]);
+    it('should return all users when no pagination is provided', async () => {
+      jest.spyOn(prisma.user, 'findMany').mockResolvedValue([mockUser]);
+      jest.spyOn(prisma.user, 'count').mockResolvedValue(1);
 
       const result = await service.findAll();
-      expect(result).toEqual([]);
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: {},
+      });
+      expect(result).toEqual({
+        data: [mockUser],
+        total: 1,
+      });
+    });
+
+    it('should return paginated users', async () => {
+      jest.spyOn(prisma.user, 'findMany').mockResolvedValue([mockUser]);
+      jest.spyOn(prisma.user, 'count').mockResolvedValue(1);
+
+      const result = await service.findAll(1, 10);
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        skip: 0,
+        take: 10,
+      });
+      expect(result).toEqual({
+        data: [mockUser],
+        total: 1,
+      });
+    });
+
+    it('should apply filters when provided', async () => {
+      jest.spyOn(prisma.user, 'findMany').mockResolvedValue([mockUser]);
+      jest.spyOn(prisma.user, 'count').mockResolvedValue(1);
+
+      const filters = { email: 'test@example.com' };
+      const result = await service.findAll(1, 10);
+
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: filters,
+        skip: 0,
+        take: 10,
+      });
+      expect(result).toEqual({
+        data: [mockUser],
+        total: 1,
+      });
     });
   });
 
