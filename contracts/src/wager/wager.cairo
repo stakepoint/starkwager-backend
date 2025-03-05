@@ -10,7 +10,7 @@ pub mod StrkWager {
     use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 
     use contracts::wager::interface::IStrkWager;
-    use contracts::wager::types::{Wager, Category, Mode};
+    use contracts::wager::types::{Wager, Category, Mode, Claim};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin_access::accesscontrol::{AccessControlComponent};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -32,6 +32,9 @@ pub mod StrkWager {
         wager_count: u64,
         wagers: Map<u64, Wager>, // wager_id -> Wager
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
+        wager_participants_claim: Map<
+            u64, Map<ContractAddress, Claim>
+        >, // wager_id -> participant -> Claim
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
         strk_address: ContractAddress,
@@ -52,6 +55,7 @@ pub mod StrkWager {
         #[flat]
         SRC5Event: SRC5Component::Event,
     }
+
 
     #[derive(Drop, starknet::Event)]
     pub struct EscrowAddressEvent {
@@ -131,7 +135,8 @@ pub mod StrkWager {
             title: ByteArray,
             terms: ByteArray,
             stake: u256,
-            mode: Mode
+            mode: Mode,
+            claim: Claim
         ) -> u64 {
             assert(self._has_sufficient_balance(stake), 'Insufficient balance');
 
@@ -155,14 +160,14 @@ pub mod StrkWager {
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
             self.wager_participants.entry(wager_id).entry(participant_id).write(creator);
             self.wager_participants_count.entry(wager_id).write(participant_id);
+            self._submit_claim(wager_id, creator, claim);
 
             self.emit(WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode });
 
             wager_id
         }
 
-
-        fn join_wager(ref self: ContractState, wager_id: u64) {
+        fn join_wager(ref self: ContractState, wager_id: u64, claim: Claim) {
             let wager = self.get_wager(wager_id);
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
@@ -180,6 +185,7 @@ pub mod StrkWager {
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
             self.wager_participants.entry(wager_id).entry(participant_id).write(caller);
             self.wager_participants_count.entry(wager_id).write(participant_id);
+            self._submit_claim(wager_id, caller, claim);
 
             self.emit(WagerJoinedEvent { wager_id, participant: caller });
         }
@@ -187,7 +193,6 @@ pub mod StrkWager {
         fn get_wager(self: @ContractState, wager_id: u64) -> Wager {
             self.wagers.entry(wager_id).read()
         }
-
 
         fn get_wager_participants(self: @ContractState, wager_id: u64) -> Span<ContractAddress> {
             let participant_count = self.wager_participants_count.entry(wager_id).read();
@@ -203,9 +208,25 @@ pub mod StrkWager {
             participants.span()
         }
 
+        fn get_wager_participants_claim(
+            self: @ContractState, wager_id: u64
+        ) -> Span<(ContractAddress, Claim)> {
+            let participants = self.get_wager_participants(wager_id);
+            let mut claim_array: Array<(ContractAddress, Claim)> = array![];
+            for i in 1
+                ..participants
+                    .len() {
+                        let participant = *participants.at(i);
+                        let claim = self._get_participant_claim(wager_id, participant);
+                        claim_array.append((participant, claim));
+                    };
+            claim_array.span()
+        }
+
         fn get_escrow_address(self: @ContractState) -> ContractAddress {
             self.escrow_address.read()
         }
+
         fn set_escrow_address(ref self: ContractState, new_address: ContractAddress) {
             self.accesscontrol.assert_only_role(ADMIN_ROLE);
             assert(!new_address.is_zero(), 'Invalid address');
@@ -272,5 +293,17 @@ pub mod StrkWager {
 
         //TODO
         fn _fund_wager(self: @ContractState, wager_id: u64, amount: u256) {}
+
+        fn _submit_claim(
+            self: @ContractState, wager_id: u64, participant: ContractAddress, claim: Claim
+        ) {
+            self.wager_participants_claim.entry(wager_id).entry(participant).write(claim);
+        }
+
+        fn _get_participant_claim(
+            self: @ContractState, wager_id: u64, participant: ContractAddress
+        ) -> Claim {
+            self.wager_participants_claim.entry(wager_id).entry(participant).read()
+        }
     }
 }
