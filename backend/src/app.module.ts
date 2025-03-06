@@ -14,6 +14,7 @@ import { CategoryModule } from './category/category.module';
 import { WagerModule } from './wager/wager.module';
 import { HashtagsModule } from './hashtags/hashtags.module';
 import { InvitationModule } from './wagerInvitations/wagerInvitations.module';
+import { WagerClaimModule } from './wager-claim/wager-claim.module';
 import { NotificationModule } from './notification/notification.module';
 import { IndexerModule } from './indexer/indexer.module';
 
@@ -43,6 +44,7 @@ import { IndexerModule } from './indexer/indexer.module';
         ],
       },
     }),
+    WagerClaimModule,
     IndexerModule,
   ],
   controllers: [AppController],
