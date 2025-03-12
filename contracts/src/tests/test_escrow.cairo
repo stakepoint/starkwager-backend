@@ -418,18 +418,6 @@ fn test_get_wager_stake() {
 }
 
 #[test]
-#[should_panic(expected: ('Caller is missing role',))]
-fn test_get_wager_stake_unauthorized() {
-    let (wager, escrow, strk_dispatcher) = setup();
-
-    let wager_id = 1_u64;
-
-    // Attempt to get wager stake from unauthorized address
-    start_cheat_caller_address(escrow.contract_address, BOB());
-    escrow.get_wager_stake(wager_id);
-}
-
-#[test]
 fn test_deposit_fund_withdraw_flow() {
     let (wager, escrow, strk_dispatcher) = setup();
 

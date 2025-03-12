@@ -91,15 +91,14 @@ pub fn create_wager(
     let creator = OWNER();
     let mut spy = spy_events();
 
+    // approve enough allowance
     cheat_caller_address(strk_dispatcher.contract_address, creator, CheatSpan::TargetCalls(1));
-    strk_dispatcher.approve(escrow.contract_address, deposit);
+    strk_dispatcher.approve(escrow.contract_address, deposit + stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
-    ); // Simulate Wager Contract
-    escrow.deposit_to_wallet(creator, deposit);
-    stop_cheat_caller_address(escrow.contract_address);
+    start_cheat_caller_address(wager.contract_address, creator); // Simulate Wager Contract
+    wager.fund_wallet(deposit);
+    stop_cheat_caller_address(wager.contract_address);
 
     // Create the wager
     let title = "My Wager";

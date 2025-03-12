@@ -4,7 +4,7 @@ pub mod Escrow {
     use starknet::storage::{
         StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
     };
-    use starknet::{ContractAddress, get_contract_address};
+    use starknet::{ContractAddress, get_contract_address, get_caller_address};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin_access::accesscontrol::{AccessControlComponent};
     use openzeppelin_access::ownable::OwnableComponent;
@@ -117,7 +117,6 @@ pub mod Escrow {
         }
 
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
-            self.accesscontrol.assert_only_role(WAGER_ROLE);
             self.user_balance.entry(address).read()
         }
 
@@ -143,7 +142,6 @@ pub mod Escrow {
         }
 
         fn get_wager_stake(self: @ContractState, wager_id: u64) -> u256 {
-            self.accesscontrol.assert_only_role(WAGER_ROLE);
             self.wager_stake.entry(wager_id).read()
         }
     }
