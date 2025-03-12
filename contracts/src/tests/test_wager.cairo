@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 use starknet::{testing, contract_address_const, get_caller_address};
 
 use contracts::wager::wager::StrkWager;
-use contracts::wager::types::{Category, Mode};
+use contracts::wager::types::{Category, Mode, Claim};
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
 use contracts::tests::utils::{OWNER, ADMIN, ALICE, BOB, setup, create_wager};
@@ -218,6 +218,7 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
 
     // Create a wager
     let stake = 100_u256;
+    let claim = Claim::Yes;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
 
     let owner = OWNER();
@@ -240,7 +241,7 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
 
     // Join the wager
     start_cheat_caller_address(wager.contract_address, owner);
-    wager.join_wager(wager_id);
+    wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 
     let participants = wager.get_wager_participants(wager_id);
@@ -269,6 +270,7 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
 #[test]
 fn test_join_wager_success_with_external_wallet_balance() {
     let (wager, escrow, strk_dispatcher) = setup();
+    let claim = Claim::No;
 
     let mut spy = spy_events();
 
@@ -284,6 +286,7 @@ fn test_join_wager_success_with_external_wallet_balance() {
 
     let owner = OWNER();
     let bob = BOB();
+    let claim = Claim::No;
 
     // Mint tokens for BOB
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
@@ -307,7 +310,7 @@ fn test_join_wager_success_with_external_wallet_balance() {
 
     // Join the wager
     start_cheat_caller_address(wager.contract_address, bob);
-    wager.join_wager(wager_id);
+    wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 
     let participants = wager.get_wager_participants(wager_id);
@@ -339,6 +342,7 @@ fn test_join_wager_insufficient_balance() {
     // Deploy contracts
     let (wager, escrow, strk_dispatcher) = setup();
     let bob = BOB();
+    let claim = Claim::No;
 
     // Configure wager with escrow
     start_cheat_caller_address(wager.contract_address, ADMIN());
@@ -365,7 +369,7 @@ fn test_join_wager_insufficient_balance() {
     wager.fund_wallet(deposit);
 
     // Attempt to join the wager (should panic)
-    wager.join_wager(wager_id);
+    wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 }
 
@@ -374,6 +378,7 @@ fn test_join_wager_insufficient_balance() {
 #[should_panic(expected: ('Wager is already resolved',))]
 fn test_join_wager_resolved() {
     let (wager, escrow, strk_dispatcher) = setup();
+    let claim = Claim::No;
 
     // Configure wager with escrow
     start_cheat_caller_address(wager.contract_address, ADMIN());
@@ -389,7 +394,7 @@ fn test_join_wager_resolved() {
     wager.resolve_wager(wager_id, owner);
 
     start_cheat_caller_address(wager.contract_address, owner);
-    wager.join_wager(wager_id);
+    wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 }
 
@@ -460,6 +465,7 @@ fn test_join_wager_head_to_head_full() {
     let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
 
     let bob = BOB();
+    let claim = Claim::No;
     // Mint tokens for BOB and approve
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
     strk_dispatcher.transfer(bob, stake);
@@ -472,7 +478,7 @@ fn test_join_wager_head_to_head_full() {
 
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
-    wager.join_wager(wager_id);
+    wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 
     // Try to join with a third participant - should fail
@@ -488,7 +494,7 @@ fn test_join_wager_head_to_head_full() {
 
     start_cheat_caller_address(wager.contract_address, alice);
     wager.fund_wallet(stake);
-    wager.join_wager(wager_id); // Should panic here
+    wager.join_wager(wager_id, claim); // Should panic here
     stop_cheat_caller_address(wager.contract_address);
 }
 
@@ -506,6 +512,7 @@ fn test_is_wager_participant() {
     // Create a wager
     let stake = 100_u256;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let claim = Claim::No;
 
     let owner = OWNER();
     let bob = BOB();
@@ -527,7 +534,7 @@ fn test_is_wager_participant() {
 
     // Join the wager
     start_cheat_caller_address(wager.contract_address, bob);
-    wager.join_wager(wager_id);
+    wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 
     assert(wager.is_wager_participant(wager_id, owner), 'owner is a participant');
@@ -536,8 +543,110 @@ fn test_is_wager_participant() {
 }
 
 #[test]
+fn test_join_wager_with_claim() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let claim = Claim::No;
+
+    let owner = OWNER();
+    let bob = BOB();
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id, claim);
+    stop_cheat_caller_address(wager.contract_address);
+
+    assert(wager.get_wager_participant_claim(wager_id, bob) == claim, 'incorrect claim');
+}
+
+#[test]
+fn test_create_wager_with_claim() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let claim = Claim::Yes;
+
+    let owner = OWNER();
+
+    // check owner claim
+    assert(wager.get_wager_participant_claim(wager_id, owner) == claim, 'incorrect claim');
+}
+
+fn test_get_wager_participants_claim() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let claim = Claim::No;
+
+    let owner = OWNER();
+    let bob = BOB();
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id, claim);
+
+    let participants_claim = wager.get_wager_participants_claim(wager_id);
+
+    assert(participants_claim.len() == 2, 'invalid length');
+    let (owner_address, owner_claim) = *participants_claim.at(0);
+    assert(owner_address == owner, 'invalid address');
+    assert(owner_claim == Claim::Yes, 'invalid claim');
+}
+
+#[test]
 fn test_fund_wager_for_create_and_join_wager() {
     let (wager, escrow, strk_dispatcher) = setup();
+    let claim = Claim::No;
 
     let mut spy = spy_events();
 
@@ -578,7 +687,7 @@ fn test_fund_wager_for_create_and_join_wager() {
 
     // Join the wager
     start_cheat_caller_address(wager.contract_address, bob);
-    wager.join_wager(wager_id);
+    wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 
     assert(escrow.get_wager_stake(wager_id) == stake * 2, 'wrong total stake');

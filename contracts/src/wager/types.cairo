@@ -27,3 +27,10 @@ pub enum Mode {
     HeadToHead,
     Group
 }
+
+#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
+pub enum Claim {
+    #[default]
+    No,
+    Yes
+}
