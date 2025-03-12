@@ -96,6 +96,8 @@ pub mod StrkWager {
     #[abi(embed_v0)]
     impl StrkWagerImpl of IStrkWager<ContractState> {
         fn fund_wallet(ref self: ContractState, amount: u256) {
+            let escrow_dispatcher = self._escrow_dispatcher();
+
             // Validate amount
             assert(amount > 0, 'Amount must be positive');
 
@@ -103,30 +105,19 @@ pub mod StrkWager {
             let caller = get_caller_address();
             assert(!caller.is_zero(), 'Invalid caller address');
 
-            // Get escrow contract address and create dispatcher
-            let escrow_address = self.escrow_address.read();
-            assert(!escrow_address.is_zero(), 'Escrow not configured');
-
-            let escrow_dispatcher = IEscrowDispatcher { contract_address: escrow_address };
-
             // Call deposit_to_wallet on escrow contract
             escrow_dispatcher.deposit_to_wallet(caller, amount);
         }
 
-        //TODO
         fn withdraw_from_wallet(ref self: ContractState, amount: u256) {
             let to = get_caller_address();
-            let escrow_address = self.escrow_address.read();
-            assert(!escrow_address.is_zero(), 'Escrow not configured');
+            let escrow_dispatcher = self._escrow_dispatcher();
 
-            let escrow_dispatcher = IEscrowDispatcher { contract_address: escrow_address };
             escrow_dispatcher.withdraw_from_wallet(to, amount);
         }
 
         fn get_balance(self: @ContractState, address: ContractAddress) -> u256 {
-            let escrow_dispatcher = IEscrowDispatcher {
-                contract_address: self.escrow_address.read()
-            };
+            let escrow_dispatcher = self._escrow_dispatcher();
             escrow_dispatcher.get_balance(address)
         }
 
@@ -163,6 +154,13 @@ pub mod StrkWager {
             self.wager_participants_count.entry(wager_id).write(participant_id);
             self._submit_claim(wager_id, creator, claim);
 
+            let in_app_balance = self.get_balance(creator);
+            if in_app_balance < stake {
+                self._top_up_in_app_wallet(stake, in_app_balance);
+            }
+
+            self._fund_wager(wager_id, stake);
+
             self.emit(WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode });
 
             wager_id
@@ -187,6 +185,13 @@ pub mod StrkWager {
             self.wager_participants.entry(wager_id).entry(participant_id).write(caller);
             self.wager_participants_count.entry(wager_id).write(participant_id);
             self._submit_claim(wager_id, caller, claim);
+
+            let in_app_balance = self.get_balance(caller);
+            if in_app_balance < wager.stake {
+                self._top_up_in_app_wallet(wager.stake, in_app_balance);
+            }
+
+            self._fund_wager(wager_id, wager.stake);
 
             self.emit(WagerJoinedEvent { wager_id, participant: caller });
         }
@@ -277,7 +282,7 @@ pub mod StrkWager {
 
     #[generate_trait]
     pub impl InternalFunctions of InternalFunctionsTrait {
-        fn _has_sufficient_balance(self: @ContractState, stake: u256) -> bool {
+        fn _has_sufficient_balance(ref self: ContractState, stake: u256) -> bool {
             let caller = get_caller_address();
             let in_app_balance = self.get_balance(caller);
             if in_app_balance >= stake {
@@ -291,15 +296,28 @@ pub mod StrkWager {
                 return true;
             }
 
+            if external_balance + in_app_balance >= stake {
+                return true;
+            }
+
             false
         }
-        //TODO
-        fn _check_balance(self: @ContractState) -> bool {
-            true
+
+        fn _fund_wager(self: @ContractState, wager_id: u64, amount: u256) {
+            self._escrow_dispatcher().fund_wager(wager_id, get_caller_address(), amount);
         }
 
-        //TODO
-        fn _fund_wager(self: @ContractState, wager_id: u64, amount: u256) {}
+        fn _escrow_dispatcher(self: @ContractState) -> IEscrowDispatcher {
+            let escrow_address = self.escrow_address.read();
+            assert(!escrow_address.is_zero(), 'Escrow not configured');
+
+            IEscrowDispatcher { contract_address: escrow_address }
+        }
+
+        fn _top_up_in_app_wallet(ref self: ContractState, stake: u256, in_app_balance: u256) {
+            let top_up = stake - in_app_balance;
+            self.fund_wallet(top_up);
+        }
 
         fn _submit_claim(
             ref self: ContractState, wager_id: u64, participant: ContractAddress, claim: Claim
