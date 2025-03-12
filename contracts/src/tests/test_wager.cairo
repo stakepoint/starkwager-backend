@@ -535,3 +535,104 @@ fn test_is_wager_participant() {
     assert(wager.is_wager_participant(wager_id, bob), 'bob is a participant');
     assert(!wager.is_wager_participant(wager_id, ALICE()), 'alice is non participant');
 }
+
+#[test]
+fn test_join_wager_with_claim() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let claim = Claim::No;
+
+    let owner = OWNER();
+    let bob = BOB();
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id, claim);
+    stop_cheat_caller_address(wager.contract_address);
+
+    assert(wager.get_wager_participant_claim(wager_id, bob) == claim, 'incorrect claim');
+}
+
+#[test]
+fn test_create_wager_with_claim() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let claim = Claim::Yes;
+
+    let owner = OWNER();
+
+    // check owner claim
+    assert(wager.get_wager_participant_claim(wager_id, owner) == claim, 'incorrect claim');
+}
+
+fn test_get_wager_participants_claim() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let claim = Claim::No;
+
+    let owner = OWNER();
+    let bob = BOB();
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id, claim);
+
+    let participants_claim = wager.get_wager_participants_claim(wager_id);
+
+    assert(participants_claim.len() == 2, 'invalid length');
+    let (owner_address, owner_claim) = *participants_claim.at(0);
+    assert(owner_address == owner, 'invalid address');
+    assert(owner_claim == Claim::Yes, 'invalid claim');
+}

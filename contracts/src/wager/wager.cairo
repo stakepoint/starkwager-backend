@@ -32,9 +32,10 @@ pub mod StrkWager {
         wager_count: u64,
         wagers: Map<u64, Wager>, // wager_id -> Wager
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
-        wager_participants_claim: Map<
+        wager_participants_claim: Map::<
             u64, Map<ContractAddress, Claim>
         >, // wager_id -> participant -> Claim
+        claim: Claim,
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
         strk_address: ContractAddress,
@@ -223,6 +224,12 @@ pub mod StrkWager {
             claim_array.span()
         }
 
+        fn get_wager_participant_claim(
+            self: @ContractState, wager_id: u64, participant: ContractAddress
+        ) -> Claim {
+            self.wager_participants_claim.entry(wager_id).entry(participant).read()
+        }
+
         fn get_escrow_address(self: @ContractState) -> ContractAddress {
             self.escrow_address.read()
         }
@@ -295,7 +302,7 @@ pub mod StrkWager {
         fn _fund_wager(self: @ContractState, wager_id: u64, amount: u256) {}
 
         fn _submit_claim(
-            self: @ContractState, wager_id: u64, participant: ContractAddress, claim: Claim
+            ref self: ContractState, wager_id: u64, participant: ContractAddress, claim: Claim
         ) {
             self.wager_participants_claim.entry(wager_id).entry(participant).write(claim);
         }

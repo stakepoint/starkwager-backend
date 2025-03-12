@@ -28,7 +28,7 @@ pub enum Mode {
     Group
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
 pub enum Claim {
     #[default]
     No,
