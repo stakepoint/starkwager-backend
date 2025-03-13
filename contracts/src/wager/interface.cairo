@@ -19,9 +19,6 @@ pub trait IStrkWager<TContractState> {
     fn join_wager(ref self: TContractState, wager_id: u64, claim: Claim);
     fn get_wager(self: @TContractState, wager_id: u64) -> Wager;
     fn get_wager_participants(self: @TContractState, wager_id: u64) -> Span<ContractAddress>;
-    fn get_wager_participants_claim(
-        self: @TContractState, wager_id: u64
-    ) -> Span<(ContractAddress, Claim)>;
     fn get_wager_participant_claim(
         self: @TContractState, wager_id: u64, participant: ContractAddress
     ) -> Claim;

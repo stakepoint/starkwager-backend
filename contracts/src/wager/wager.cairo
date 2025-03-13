@@ -168,18 +168,21 @@ pub mod StrkWager {
 
         fn join_wager(ref self: ContractState, wager_id: u64, claim: Claim) {
             let wager = self.get_wager(wager_id);
+            let caller = get_caller_address();
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(!wager.resolved, 'Wager is already resolved');
+
+            // Check if caller is already a participant
+            assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
+
             if wager.mode == Mode::HeadToHead {
                 assert(
                     self.wager_participants_count.entry(wager_id).read() == 1,
-                    'Wager has 2 participants'
+                    'Head-to-head wager full'
                 );
             }
             assert(self._has_sufficient_balance(wager.stake), 'Insufficient balance');
-
-            let caller = get_caller_address();
 
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
             self.wager_participants.entry(wager_id).entry(participant_id).write(caller);
@@ -214,25 +217,10 @@ pub mod StrkWager {
             participants.span()
         }
 
-        fn get_wager_participants_claim(
-            self: @ContractState, wager_id: u64
-        ) -> Span<(ContractAddress, Claim)> {
-            let participants = self.get_wager_participants(wager_id);
-            let mut claim_array: Array<(ContractAddress, Claim)> = array![];
-            for i in 1
-                ..participants
-                    .len() {
-                        let participant = *participants.at(i);
-                        let claim = self._get_participant_claim(wager_id, participant);
-                        claim_array.append((participant, claim));
-                    };
-            claim_array.span()
-        }
-
         fn get_wager_participant_claim(
             self: @ContractState, wager_id: u64, participant: ContractAddress
         ) -> Claim {
-            self.wager_participants_claim.entry(wager_id).entry(participant).read()
+            self._get_participant_claim(wager_id, participant)
         }
 
         fn get_escrow_address(self: @ContractState) -> ContractAddress {
