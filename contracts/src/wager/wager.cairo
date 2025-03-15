@@ -32,6 +32,7 @@ pub mod StrkWager {
         wager_count: u64,
         wagers: Map<u64, Wager>, // wager_id -> Wager
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
+        wager_participants_mapping: Map<(u64, ContractAddress), bool>,
         wager_participants_claim: Map::<
             u64, Map<ContractAddress, Claim>
         >, // wager_id -> participant -> Claim
@@ -151,6 +152,7 @@ pub mod StrkWager {
             self.wager_count.write(wager_id);
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
             self.wager_participants.entry(wager_id).entry(participant_id).write(creator);
+            self.wager_participants_mapping.entry((wager_id, creator)).write(true);
             self.wager_participants_count.entry(wager_id).write(participant_id);
             self._submit_claim(wager_id, creator, claim);
 
@@ -186,6 +188,7 @@ pub mod StrkWager {
 
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
             self.wager_participants.entry(wager_id).entry(participant_id).write(caller);
+            self.wager_participants_mapping.entry((wager_id, caller)).write(true);
             self.wager_participants_count.entry(wager_id).write(participant_id);
             self._submit_claim(wager_id, caller, claim);
 
@@ -251,20 +254,7 @@ pub mod StrkWager {
         fn is_wager_participant(
             self: @ContractState, wager_id: u64, caller: ContractAddress
         ) -> bool {
-            let participant_count = self.wager_participants_count.entry(wager_id).read();
-            let mut i = 1;
-            let mut is_participant = false;
-
-            while i <= participant_count {
-                let participant = self.wager_participants.entry(wager_id).entry(i).read();
-                if participant == caller {
-                    is_participant = true;
-                    break;
-                }
-                i += 1;
-            };
-
-            is_participant
+            self.wager_participants_mapping.entry((wager_id, caller)).read()
         }
     }
 
