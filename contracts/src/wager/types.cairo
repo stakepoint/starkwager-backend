@@ -25,12 +25,12 @@ pub enum Category {
 pub enum Mode {
     #[default]
     HeadToHead,
-    Group
+    Group,
 }
 
 #[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
 pub enum Claim {
     #[default]
     No,
-    Yes
+    Yes,
 }
