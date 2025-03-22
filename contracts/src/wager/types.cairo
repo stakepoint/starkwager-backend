@@ -8,9 +8,9 @@ pub struct Wager {
     pub terms: ByteArray,
     pub creator: ContractAddress,
     pub stake: u256,
-    pub resolved: bool,
     pub winner: ContractAddress,
     pub mode: Mode,
+    pub state: WagerState,
 }
 
 #[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
@@ -33,4 +33,14 @@ pub enum Claim {
     #[default]
     No,
     Yes
+}
+
+#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
+pub enum WagerState {
+    #[default]
+    Pending,
+    Active,
+    VotingPhase,
+    Resolved,
+    Cancelled
 }
