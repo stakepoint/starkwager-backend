@@ -26,4 +26,7 @@ pub trait IStrkWager<TContractState> {
     fn get_escrow_address(self: @TContractState) -> ContractAddress;
     fn resolve_wager(ref self: TContractState, wager_id: u64, winner: ContractAddress);
     fn is_wager_participant(self: @TContractState, wager_id: u64, caller: ContractAddress) -> bool;
+    fn resolve_wager_based_on_outcome(
+        ref self: TContractState, wager_id: u64, final_outcome: Claim,
+    );
 }

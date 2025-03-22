@@ -10,7 +10,7 @@ use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
 
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
 };
 
 
@@ -43,13 +43,13 @@ fn test_set_escrow_address() {
                     StrkWager::Event::EscrowAddressUpdated(
                         StrkWager::EscrowAddressEvent {
                             old_address: contract_address_const::<
-                                0
+                                0,
                             >(), // Assuming initial address is zero
-                            new_address: new_address
-                        }
-                    )
-                )
-            ]
+                            new_address: new_address,
+                        },
+                    ),
+                ),
+            ],
         );
 
     let updated_address: ContractAddress = wager.get_escrow_address();
@@ -260,10 +260,10 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
                 (
                     wager.contract_address,
                     StrkWager::Event::WagerJoined(
-                        StrkWager::WagerJoinedEvent { wager_id, participant: bob }
-                    )
-                )
-            ]
+                        StrkWager::WagerJoinedEvent { wager_id, participant: bob },
+                    ),
+                ),
+            ],
         );
 }
 
@@ -329,10 +329,10 @@ fn test_join_wager_success_with_external_wallet_balance() {
                 (
                     wager.contract_address,
                     StrkWager::Event::WagerJoined(
-                        StrkWager::WagerJoinedEvent { wager_id, participant: bob }
-                    )
-                )
-            ]
+                        StrkWager::WagerJoinedEvent { wager_id, participant: bob },
+                    ),
+                ),
+            ],
         );
 }
 
@@ -691,4 +691,84 @@ fn test_join_wager_if_already_a_participant() {
     wager.join_wager(wager_id, claim);
     wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
+}
+
+#[test]
+fn test_resolve_wager_based_on_outcome() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    let mut spy = spy_events();
+
+    let stake = 100_u256;
+    let deposit = 100_u256;
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.approve(escrow.contract_address, 500_u256);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, OWNER()); // Simulate Wager Contract
+    wager.fund_wallet(deposit);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create the wager
+    let title = "My Wager";
+    let terms = "My terms";
+    let category = Category::Sports;
+    let mode = Mode::Group;
+    let claim = Claim::Yes;
+
+    let alice = ALICE();
+    let bob = BOB();
+    let final_outcome = Claim::Yes;
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(alice, stake);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Approve tokens and fund wallets
+    start_cheat_caller_address(strk_dispatcher.contract_address, alice);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, alice);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create the wager
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode, claim);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager with claims
+    start_cheat_caller_address(wager.contract_address, ALICE());
+    wager.join_wager(wager_id, final_outcome);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id, Claim::No);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Resolve the wager
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    wager.resolve_wager_based_on_outcome(wager_id, final_outcome);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Fetch the resolved wager and assert winner
+    let resolved_wager = wager.get_wager(wager_id);
+    assert_eq!(resolved_wager.winner, OWNER(), "first_participant_winner");
+    assert!(resolved_wager.resolved, "Wager_should_marked_resolved");
 }
