@@ -286,7 +286,7 @@ pub mod StrkWager {
             let caller = get_caller_address();
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
-            assert(!wager.resolved, 'Wager is already resolved');
+            assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
 
             // Check if caller is a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Not a participant');
