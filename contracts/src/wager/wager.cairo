@@ -276,13 +276,13 @@ pub mod StrkWager {
             let wager = self.get_wager(wager_id);
             let caller = get_caller_address();
 
-            assert(!wager.creator.is_zero(), 'Wager does not exist');§
+            assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(!wager.resolved, 'Wager is already resolved');
 
             // Check if caller is a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Not a participant');
 
-            assert(self.has_outcome_submitted(wager_id, caller), 'Participatn already submitted');
+            assert(!self.has_outcome_submitted(wager_id, caller), 'Participatn already submitted');
 
             self.wager_outcome_votes.entry((wager_id, caller)).write(vote);
             self.wager_outcome_submitted.entry((wager_id, caller)).write(true);

@@ -692,3 +692,66 @@ fn test_join_wager_if_already_a_participant() {
     wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 }
+
+#[test]
+fn test_submit_outcome_pass() {
+    // Deploy contracts
+    let (wager, escrow, strk_dispatcher) = setup();
+    let bob = BOB();
+
+    let mut spy = spy_events();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let deposit = 20_u256; // Insufficient deposit
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    start_cheat_caller_address(wager.contract_address, bob);
+
+    let vote = true;
+    wager.submit_outcome(wager_id, vote);
+
+    assert(wager.has_outcome_submitted(wager_id, bob), 'outcome not registered');
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    wager.contract_address,
+                    StrkWager::Event::OutcomeSubmitted(
+                        StrkWager::OutcomeSubmittedEvent { wager_id, participant: bob, vote }
+                    )
+                )
+            ]
+        );
+
+}
+
+#[test]
+#[should_panic(expected: 'Participatn already submitted')]
+fn test_submit_outcome_fail_double_submit() {
+    // Deploy contracts
+    let (wager, escrow, strk_dispatcher) = setup();
+    let bob = BOB();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let deposit = 20_u256; // Insufficient deposit
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    start_cheat_caller_address(wager.contract_address, bob);
+
+    wager.submit_outcome(wager_id, true);
+
+    wager.submit_outcome(wager_id, true);
+}
