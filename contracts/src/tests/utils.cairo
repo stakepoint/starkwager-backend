@@ -8,7 +8,7 @@ use snforge_std::{
 };
 
 use contracts::wager::wager::StrkWager;
-use contracts::wager::types::{Mode, Category, Claim};
+use contracts::wager::types::{Mode, Category, Claim, WagerState};
 
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
@@ -106,6 +106,7 @@ pub fn create_wager(
     let category = Category::Sports;
     let mode = Mode::HeadToHead;
     let claim = Claim::Yes;
+    let state = WagerState::Pending;
 
     cheat_caller_address(wager.contract_address, creator, CheatSpan::TargetCalls(1));
     let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode, claim);
@@ -118,11 +119,13 @@ pub fn create_wager(
                     wager.contract_address,
                     StrkWager::Event::WagerCreated(
                         StrkWager::WagerCreatedEvent {
-                            wager_id, category, title, terms, creator, stake, mode,
-                        },
-                    ),
-                ),
-            ],
+
+                            wager_id, category, title, terms, creator, stake, mode, state
+                        }
+                    )
+                )
+            ]
+
         );
 
     wager_id

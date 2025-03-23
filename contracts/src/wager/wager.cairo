@@ -10,7 +10,7 @@ pub mod StrkWager {
     use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 
     use contracts::wager::interface::IStrkWager;
-    use contracts::wager::types::{Wager, Category, Mode, Claim};
+    use contracts::wager::types::{Wager, Category, Mode, Claim, WagerState};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin_access::accesscontrol::{AccessControlComponent};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -75,6 +75,7 @@ pub mod StrkWager {
         pub creator: ContractAddress,
         pub stake: u256,
         pub mode: Mode,
+        pub state: WagerState,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -142,7 +143,7 @@ pub mod StrkWager {
 
             let creator = get_caller_address();
             let wager_id = self.wager_count.read() + 1;
-
+            let state = WagerState::Pending;
             let new_wager = Wager {
                 wager_id,
                 category,
@@ -150,9 +151,10 @@ pub mod StrkWager {
                 terms: terms.clone(),
                 creator,
                 stake,
-                resolved: false,
                 winner: contract_address_const::<0>(),
                 mode,
+                state,
+
             };
 
             self.wagers.entry(wager_id).write(new_wager);
@@ -170,17 +172,22 @@ pub mod StrkWager {
 
             self._fund_wager(wager_id, stake);
 
-            self.emit(WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode });
+            self
+                .emit(
+                    WagerCreatedEvent {
+                        wager_id, category, title, terms, creator, stake, mode, state
+                    }
+                );
 
             wager_id
         }
 
         fn join_wager(ref self: ContractState, wager_id: u64, claim: Claim) {
-            let wager = self.get_wager(wager_id);
+            let mut wager = self.get_wager(wager_id);
             let caller = get_caller_address();
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
-            assert(!wager.resolved, 'Wager is already resolved');
+            assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
 
             // Check if caller is already a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
@@ -205,6 +212,9 @@ pub mod StrkWager {
             }
 
             self._fund_wager(wager_id, wager.stake);
+
+            wager.state = WagerState::Active;
+            self.wagers.entry(wager_id).write(wager);
 
             self.emit(WagerJoinedEvent { wager_id, participant: caller });
         }
@@ -250,9 +260,9 @@ pub mod StrkWager {
         //TODO
         fn resolve_wager(ref self: ContractState, wager_id: u64, winner: ContractAddress) {
             let mut wager = self.wagers.entry(wager_id).read();
-            assert(!wager.resolved, 'Wager is already resolved');
+            assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
 
-            wager.resolved = true;
+            wager.state = WagerState::Resolved;
             wager.winner = winner;
 
             self.wagers.entry(wager_id).write(wager);
