@@ -19,11 +19,30 @@ export class NotificationService {
     return { data: notification };
   }
 
-  async getNotifications(userId: string, isRead?: boolean) {
-    const notifications = await this.prisma.notification.findMany({
-      where: { userId, isRead },
+  async getNotifications(
+    userId: string,
+    isRead?: boolean,
+    page?: number,
+    limit?: number,
+  ): Promise<{ data: Notification[]; total: number }> {
+    const skip = page && limit ? (page - 1) * limit : undefined;
+
+    const query = {
+      where: {
+        userId,
+        isRead,
+      },
+      skip,
+      take: limit,
+    };
+
+    const total = await this.prisma.notification.count({
+      where: query.where,
     });
-    return { data: notifications, totalcount: notifications.length };
+
+    const notifications = await this.prisma.notification.findMany(query);
+
+    return { data: notifications, total };
   }
 
   async markAsRead(id: string) {
