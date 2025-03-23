@@ -53,6 +53,7 @@ pub mod StrkWager {
     pub enum Event {
         EscrowAddressUpdated: EscrowAddressEvent,
         WagerCreated: WagerCreatedEvent,
+        WagerJoined: WagerJoinedEvent,
         OutcomeSubmitted: OutcomeSubmittedEvent,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
@@ -82,6 +83,13 @@ pub mod StrkWager {
     pub struct WagerJoinedEvent {
         pub wager_id: u64,
         pub participant: ContractAddress,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct OutcomeSubmittedEvent {
+        pub wager_id: u64,
+        pub participant: ContractAddress,
+        pub vote: bool,
     }
 
     const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE"); // Unique identifier for the role
@@ -278,6 +286,8 @@ pub mod StrkWager {
 
             self.wager_outcome_votes.entry((wager_id, caller)).write(vote);
             self.wager_outcome_submitted.entry((wager_id, caller)).write(true);
+
+            self.emit(OutcomeSubmittedEvent { wager_id, participant: caller, vote });
         }
     }
 
