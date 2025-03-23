@@ -14,13 +14,13 @@ pub trait IStrkWager<TContractState> {
         terms: ByteArray,
         stake: u256,
         mode: Mode,
-        claim: Claim
+        claim: Claim,
     ) -> u64;
     fn join_wager(ref self: TContractState, wager_id: u64, claim: Claim);
     fn get_wager(self: @TContractState, wager_id: u64) -> Wager;
     fn get_wager_participants(self: @TContractState, wager_id: u64) -> Span<ContractAddress>;
     fn get_wager_participant_claim(
-        self: @TContractState, wager_id: u64, participant: ContractAddress
+        self: @TContractState, wager_id: u64, participant: ContractAddress,
     ) -> Claim;
     fn set_escrow_address(ref self: TContractState, new_address: ContractAddress);
     fn get_escrow_address(self: @TContractState) -> ContractAddress;

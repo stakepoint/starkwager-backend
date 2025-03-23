@@ -42,7 +42,7 @@ fn test_deposit_to_wallet_insufficient_balance() {
 
     // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(BOB(), amount);
     stop_cheat_caller_address(escrow.contract_address);
@@ -61,7 +61,7 @@ fn test_deposit_to_wallet_ok() {
 
     // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(OWNER(), amount);
 
@@ -84,7 +84,7 @@ fn test_withdraw_from_wallet() {
 
     // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(OWNER(), initial_balance);
 
@@ -132,7 +132,7 @@ fn test_get_balance() {
 
     // Deposit to wallet (caller is Wager Contract, which has WAGER_ROLE)
     start_cheat_caller_address(
-        escrow.contract_address, wager.contract_address
+        escrow.contract_address, wager.contract_address,
     ); // Simulate Wager Contract
     escrow.deposit_to_wallet(OWNER(), amount);
 
@@ -319,7 +319,7 @@ fn test_fund_multiple_wagers() {
     stop_cheat_caller_address(escrow.contract_address);
 
     assert(
-        final_user_balance == deposit_amount - wager1_amount - wager2_amount, 'wrong user balance'
+        final_user_balance == deposit_amount - wager1_amount - wager2_amount, 'wrong user balance',
     );
     assert(wager1_stake == wager1_amount, 'wrong wager1 stake');
     assert(wager2_stake == wager2_amount, 'wrong wager2 stake');
@@ -387,7 +387,7 @@ fn test_incremental_funding() {
 
     assert(
         final_user_balance == deposit_amount - first_funding - second_funding,
-        'wrong final user balance'
+        'wrong final user balance',
     );
     assert(final_wager_stake == first_funding + second_funding, 'wrong final wager stake');
 }
@@ -448,7 +448,7 @@ fn test_deposit_fund_withdraw_flow() {
     stop_cheat_caller_address(escrow.contract_address);
 
     assert(
-        final_user_balance == deposit_amount - wager_amount - withdraw_amount, 'wrong user balance'
+        final_user_balance == deposit_amount - wager_amount - withdraw_amount, 'wrong user balance',
     );
     assert(wager_stake == wager_amount, 'wrong wager stake');
     assert(escrow_balance == deposit_amount - withdraw_amount, 'wrong escrow balance');

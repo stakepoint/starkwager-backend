@@ -699,69 +699,37 @@ fn test_resolve_wager_based_on_outcome() {
 
     let mut spy = spy_events();
 
-    let stake = 100_u256;
-    let deposit = 100_u256;
-
     // Configure wager with escrow
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
-    strk_dispatcher.approve(escrow.contract_address, 500_u256);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    start_cheat_caller_address(wager.contract_address, OWNER()); // Simulate Wager Contract
-    wager.fund_wallet(deposit);
-    stop_cheat_caller_address(wager.contract_address);
-
-    // Create the wager
-    let title = "My Wager";
-    let terms = "My terms";
-    let category = Category::Sports;
-    let mode = Mode::Group;
-    let claim = Claim::Yes;
-
-    let alice = ALICE();
-    let bob = BOB();
+    // Create a wager
+    let stake = 100_u256;
     let final_outcome = Claim::Yes;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
 
+    let bob = BOB();
+
+    // Mint tokens for BOB
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
-    strk_dispatcher.transfer(alice, stake);
     strk_dispatcher.transfer(bob, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // Approve tokens and fund wallets
-    start_cheat_caller_address(strk_dispatcher.contract_address, alice);
-    strk_dispatcher.approve(escrow.contract_address, stake);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    start_cheat_caller_address(wager.contract_address, alice);
-    wager.fund_wallet(stake);
-    stop_cheat_caller_address(wager.contract_address);
-
+    // BOB approves tokens
     start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
+    // Fund the wallet of the participant
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Create the wager
-    start_cheat_caller_address(wager.contract_address, OWNER());
-    let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode, claim);
-    stop_cheat_caller_address(wager.contract_address);
-
-    // Join the wager with claims
-    start_cheat_caller_address(wager.contract_address, ALICE());
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
     wager.join_wager(wager_id, final_outcome);
     stop_cheat_caller_address(wager.contract_address);
-
-    start_cheat_caller_address(wager.contract_address, bob);
-    wager.join_wager(wager_id, Claim::No);
-    stop_cheat_caller_address(wager.contract_address);
-
     // Resolve the wager
     start_cheat_caller_address(wager.contract_address, OWNER());
     wager.resolve_wager_based_on_outcome(wager_id, final_outcome);

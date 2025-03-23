@@ -274,18 +274,13 @@ pub mod StrkWager {
             assert(participant_count > 0, 'no_participants_in_wager');
 
             let mut winner = contract_address_const::<0>();
-            let mut i = 1;
 
-            while i <= participant_count {
-                let participant = self.wager_participants.entry(wager_id).entry(i).read();
-                let claim = self.wager_participants_claim.entry(wager_id).entry(participant).read();
+            let participant = self.wager_participants.entry(wager_id).entry(1).read();
+            let claim = self.wager_participants_claim.entry(wager_id).entry(participant).read();
 
-                if claim == final_outcome {
-                    winner = participant;
-                    break;
-                }
-                i += 1;
-            };
+            if claim == final_outcome {
+                winner = participant;
+            }
 
             assert(!winner.is_zero(), 'no_matching_claim');
 

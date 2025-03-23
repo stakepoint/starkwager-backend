@@ -4,7 +4,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
     stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, cheat_caller_address, CheatSpan,
-    stop_cheat_block_timestamp
+    stop_cheat_block_timestamp,
 };
 
 use contracts::wager::wager::StrkWager;
@@ -44,7 +44,7 @@ pub fn deploy_mock_erc20() -> IERC20Dispatcher {
 }
 
 pub fn deploy_escrow(
-    wager_address: ContractAddress, strk_dispatcher: IERC20Dispatcher
+    wager_address: ContractAddress, strk_dispatcher: IERC20Dispatcher,
 ) -> (IEscrowDispatcher, IERC20Dispatcher) {
     let contract = declare("Escrow").unwrap().contract_class();
 
@@ -58,7 +58,7 @@ pub fn deploy_escrow(
 }
 
 pub fn deploy_wager(
-    admin_address: ContractAddress, strk_dispatcher: IERC20Dispatcher
+    admin_address: ContractAddress, strk_dispatcher: IERC20Dispatcher,
 ) -> (IStrkWagerDispatcher, ContractAddress) {
     let contract = declare("StrkWager").unwrap().contract_class();
     let mut calldata = array![];
@@ -119,10 +119,10 @@ pub fn create_wager(
                     StrkWager::Event::WagerCreated(
                         StrkWager::WagerCreatedEvent {
                             wager_id, category, title, terms, creator, stake, mode,
-                        }
-                    )
-                )
-            ]
+                        },
+                    ),
+                ),
+            ],
         );
 
     wager_id
