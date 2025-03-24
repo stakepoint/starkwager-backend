@@ -36,8 +36,10 @@ pub mod StrkWager {
         wager_participants_claim: Map::<
             u64, Map<ContractAddress, Claim>
         >, // wager_id -> participant -> Claim
-        wager_outcome_votes:  Map<(u64, ContractAddress), bool>, // wager_id -> participant -> vote
-        wager_outcome_submitted: Map<(u64, ContractAddress), bool>,  // wager_id -> participant ->  submitted
+        wager_outcome_votes: Map<(u64, ContractAddress), bool>, // wager_id -> participant -> vote
+        wager_outcome_submitted: Map<
+            (u64, ContractAddress), bool
+        >, // wager_id -> participant ->  submitted
         claim: Claim,
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
@@ -277,7 +279,9 @@ pub mod StrkWager {
             self.wager_participants_mapping.entry((wager_id, caller)).read()
         }
 
-        fn has_outcome_submitted(self: @ContractState, wager_id: u64, caller: ContractAddress) -> bool {
+        fn has_outcome_submitted(
+            self: @ContractState, wager_id: u64, caller: ContractAddress
+        ) -> bool {
             self.wager_outcome_submitted.entry((wager_id, caller)).read()
         }
 

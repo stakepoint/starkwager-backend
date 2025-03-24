@@ -844,7 +844,6 @@ fn test_submit_outcome_pass() {
                 )
             ]
         );
-
 }
 
 #[test]
@@ -870,7 +869,6 @@ fn test_submit_outcome_fail_double_submit() {
 
     wager.submit_outcome(wager_id, true);
 }
-
 
 #[test]
 #[should_panic(expected: 'Wager is already resolved')]
