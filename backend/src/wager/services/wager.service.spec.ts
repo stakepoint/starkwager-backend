@@ -83,4 +83,48 @@ describe('WagerService', () => {
       expect(result).toEqual(mockWager);
     });
   });
+
+  describe('bulkCreateWagers', () => {
+    it('should create multiple wagers', async () => {
+      const createWagerDtos: CreateWagerDto[] = [
+        {
+          name: 'Wager 1',
+          description: 'Description 1',
+          categoryId: '1',
+          stakeAmount: 100,
+          createdById: mockWager.createdById,
+        },
+        {
+          name: 'Wager 2',
+          description: 'Description 2',
+          categoryId: '2',
+          stakeAmount: 200,
+          createdById: mockWager.createdById,
+        },
+      ];
+
+      const mockCreatedWagers = createWagerDtos.map((dto, index) => ({
+        id: (index + 1).toString(),
+        ...dto,
+        status: WagerStatus.PENDING,
+        tags: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
+      prisma.wager.createMany = jest
+        .fn()
+        .mockResolvedValue({ count: createWagerDtos.length });
+      prisma.wager.findMany = jest.fn().mockResolvedValue(mockCreatedWagers);
+
+      const result = await service.bulkCreateWagers(createWagerDtos);
+
+      expect(prisma.wager.createMany).toHaveBeenCalledWith({
+        data: createWagerDtos,
+        skipDuplicates: true,
+      });
+      expect(prisma.wager.findMany).toHaveBeenCalled();
+      expect(result).toEqual(mockCreatedWagers);
+    });
+  });
 });
