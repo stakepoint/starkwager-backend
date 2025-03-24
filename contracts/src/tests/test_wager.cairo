@@ -416,7 +416,7 @@ fn test_resolve_wager() {
 
     // Assert that the wager is resolved and the winner is set
     let wager = wager.get_wager(wager_id);
-    assert(wager.resolved == true, 'Wager not resolved');
+    assert(wager.state == WagerState::Resolved, 'Wager not resolved');
     assert(wager.winner == owner, 'Winner is not owner');
 }
 
