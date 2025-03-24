@@ -291,7 +291,7 @@ pub mod StrkWager {
             // Check if caller is a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Not a participant');
 
-            assert(!self.has_outcome_submitted(wager_id, caller), 'Participatn already submitted');
+            assert(!self.has_outcome_submitted(wager_id, caller), 'Participant already submitted');
 
             self.wager_outcome_votes.entry((wager_id, caller)).write(vote);
             self.wager_outcome_submitted.entry((wager_id, caller)).write(true);
