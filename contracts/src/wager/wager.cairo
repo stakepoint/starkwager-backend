@@ -1,19 +1,16 @@
 #[starknet::contract]
 pub mod StrkWager {
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map,
-    };
-
-    use starknet::{ContractAddress, get_caller_address, contract_address_const};
-    use core::num::traits::Zero;
-
     use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
-
     use contracts::wager::interface::IStrkWager;
-    use contracts::wager::types::{Wager, Category, Mode, Claim, WagerState};
+    use contracts::wager::types::{Category, Claim, Mode, Wager, WagerState};
+    use core::num::traits::Zero;
     use openzeppelin::introspection::src5::SRC5Component;
-    use openzeppelin_access::accesscontrol::{AccessControlComponent};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use openzeppelin_access::accesscontrol::AccessControlComponent;
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -33,7 +30,7 @@ pub mod StrkWager {
         wagers: Map<u64, Wager>, // wager_id -> Wager
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_mapping: Map<(u64, ContractAddress), bool>,
-        wager_participants_claim: Map::<
+        wager_participants_claim: Map<
             u64, Map<ContractAddress, Claim>,
         >, // wager_id -> participant -> Claim
         claim: Claim,
@@ -75,7 +72,6 @@ pub mod StrkWager {
         pub creator: ContractAddress,
         pub stake: u256,
         pub mode: Mode,
-        pub state: WagerState,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -143,7 +139,7 @@ pub mod StrkWager {
 
             let creator = get_caller_address();
             let wager_id = self.wager_count.read() + 1;
-            let state = WagerState::Pending;
+
             let new_wager = Wager {
                 wager_id,
                 category,
@@ -151,10 +147,9 @@ pub mod StrkWager {
                 terms: terms.clone(),
                 creator,
                 stake,
+                resolved: false,
                 winner: contract_address_const::<0>(),
                 mode,
-                state,
-
             };
 
             self.wagers.entry(wager_id).write(new_wager);
@@ -172,22 +167,17 @@ pub mod StrkWager {
 
             self._fund_wager(wager_id, stake);
 
-            self
-                .emit(
-                    WagerCreatedEvent {
-                        wager_id, category, title, terms, creator, stake, mode, state
-                    }
-                );
+            self.emit(WagerCreatedEvent { wager_id, category, title, terms, creator, stake, mode });
 
             wager_id
         }
 
         fn join_wager(ref self: ContractState, wager_id: u64, claim: Claim) {
-            let mut wager = self.get_wager(wager_id);
+            let wager = self.get_wager(wager_id);
             let caller = get_caller_address();
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
-            assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
+            assert(!wager.resolved, 'Wager is already resolved');
 
             // Check if caller is already a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
@@ -213,9 +203,6 @@ pub mod StrkWager {
 
             self._fund_wager(wager_id, wager.stake);
 
-            wager.state = WagerState::Active;
-            self.wagers.entry(wager_id).write(wager);
-
             self.emit(WagerJoinedEvent { wager_id, participant: caller });
         }
 
@@ -232,7 +219,7 @@ pub mod StrkWager {
                 let participant = self.wager_participants.entry(wager_id).entry(i).read();
                 participants.append(participant);
                 i += 1;
-            };
+            }
 
             participants.span()
         }
@@ -260,9 +247,9 @@ pub mod StrkWager {
         //TODO
         fn resolve_wager(ref self: ContractState, wager_id: u64, winner: ContractAddress) {
             let mut wager = self.wagers.entry(wager_id).read();
-            assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
+            assert(!wager.resolved, 'Wager is already resolved');
 
-            wager.state = WagerState::Resolved;
+            wager.resolved = true;
             wager.winner = winner;
 
             self.wagers.entry(wager_id).write(wager);
@@ -278,29 +265,44 @@ pub mod StrkWager {
             ref self: ContractState, wager_id: u64, final_outcome: Claim,
         ) {
             let mut wager = self.wagers.entry(wager_id).read();
-            assert(!wager.resolved, 'wager_is_already_resolved');
 
-            let participant_count = self.wager_participants_count.entry(wager_id).read();
-            assert(participant_count > 0, 'no_participants_in_wager');
+            assert(wager.state != WagerState::Resolved, 'wager_is_already_resolved');
 
-            let mut winner = contract_address_const::<0>();
+            match wager.mode {
+                Mode::HeadToHead => {
+                    let participant_count = self.wager_participants_count.entry(wager_id).read();
+                    assert(participant_count > 0, 'wager_have_no_participants');
 
-            let participant = self.wager_participants.entry(wager_id).entry(1).read();
-            let claim = self.wager_participants_claim.entry(wager_id).entry(participant).read();
+                    let mut winner = contract_address_const::<0>();
+                    let mut i = 1;
 
-            if claim == final_outcome {
-                winner = participant;
+                    while i <= participant_count {
+                        let participant = self.wager_participants.entry(wager_id).entry(i).read();
+                        let claim = self
+                            .wager_participants_claim
+                            .entry(wager_id)
+                            .entry(participant)
+                            .read();
+
+                        if claim == final_outcome {
+                            winner = participant;
+                            break;
+                        }
+                        i += 1;
+                    }
+
+                    assert(!winner.is_zero(), 'no_matching_claim');
+
+                    wager.state = WagerState::Resolved;
+                    wager.winner = winner;
+
+                    self.wagers.entry(wager_id).write(wager);
+
+                    // Emit an event for resolution
+                    self.emit(WagerResolvedEvent { wager_id, winner, final_outcome });
+                },
+                Mode::Group => { panic('currently limited to HeadToHead mode'); },
             }
-
-            assert(!winner.is_zero(), 'no_matching_claim');
-
-            wager.resolved = true;
-            wager.winner = winner;
-
-            self.wagers.entry(wager_id).write(wager);
-
-            // Emit an event for resolution
-            self.emit(WagerResolvedEvent { wager_id, winner, final_outcome });
         }
     }
 

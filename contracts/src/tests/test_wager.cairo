@@ -1,17 +1,14 @@
-use starknet::ContractAddress;
-use starknet::{testing, contract_address_const, get_caller_address};
-
-use contracts::wager::wager::StrkWager;
-use contracts::wager::types::{Category, Mode, Claim, WagerState};
-use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
-use contracts::tests::utils::{OWNER, ADMIN, ALICE, BOB, setup, create_wager};
+use contracts::tests::utils::{ADMIN, ALICE, BOB, OWNER, create_wager, setup};
+use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
+use contracts::wager::types::{Category, Claim, Mode, WagerState};
+use contracts::wager::wager::StrkWager;
 use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
-
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, spy_events,
+    start_cheat_caller_address, stop_cheat_caller_address,
 };
+use starknet::{ContractAddress, contract_address_const, get_caller_address, testing};
 
 
 #[test]
@@ -251,7 +248,7 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
             found = true;
             break;
         }
-    };
+    }
     assert!(found, "Participant should be added to the wager");
 
     spy
@@ -320,7 +317,7 @@ fn test_join_wager_success_with_external_wallet_balance() {
             found = true;
             break;
         }
-    };
+    }
     assert!(found, "Participant should be added to the wager");
 
     spy
@@ -421,7 +418,7 @@ fn test_get_wager_ok() {
     assert!(retrieved_wager.terms == "My terms", "Incorrect terms");
     assert!(retrieved_wager.creator == OWNER(), "Incorrect creator");
     assert!(retrieved_wager.stake == stake, "Incorrect stake");
-    assert!(retrieved_wager.state != WagerState::Resolved, "Wager should not be resolved");
+    assert!(!retrieved_wager.resolved, "Wager should not be resolved");
     assert!(retrieved_wager.mode == Mode::HeadToHead, "Incorrect mode");
 }
 
@@ -698,32 +695,70 @@ fn test_resolve_wager_based_on_outcome() {
     let (wager, escrow, strk_dispatcher) = setup();
 
     let mut spy = spy_events();
-       // Create a wager
+
     let stake = 100_u256;
-    let final_outcome = Claim::Yes;
-    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let deposit = 100_u256;
 
-    let bob = BOB();
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
 
-    // Mint tokens for BOB
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.approve(escrow.contract_address, 500_u256);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, OWNER()); // Simulate Wager Contract
+    wager.fund_wallet(deposit);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create the wager
+    let title = "My Wager";
+    let terms = "My terms";
+    let category = Category::Sports;
+    let mode = Mode::Group;
+    let claim = Claim::Yes;
+
+    let alice = ALICE();
+    let bob = BOB();
+    let final_outcome = Claim::Yes;
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(alice, stake);
     strk_dispatcher.transfer(bob, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // BOB approves tokens
+    // Approve tokens and fund wallets
+    start_cheat_caller_address(strk_dispatcher.contract_address, alice);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, alice);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
     start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // Fund the wallet of the participant
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Join the wager
-    start_cheat_caller_address(wager.contract_address, bob);
+    // Create the wager
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode, claim);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager with claims
+    start_cheat_caller_address(wager.contract_address, ALICE());
     wager.join_wager(wager_id, final_outcome);
     stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id, Claim::No);
+    stop_cheat_caller_address(wager.contract_address);
+
     // Resolve the wager
     start_cheat_caller_address(wager.contract_address, OWNER());
     wager.resolve_wager_based_on_outcome(wager_id, final_outcome);
@@ -732,120 +767,5 @@ fn test_resolve_wager_based_on_outcome() {
     // Fetch the resolved wager and assert winner
     let resolved_wager = wager.get_wager(wager_id);
     assert_eq!(resolved_wager.winner, OWNER(), "first_participant_winner");
-    assert!(resolved_wager.resolved, "Wager_should_marked_resolved");
-
-
-fn test_wager_state_transitions() {
-    // Set up the test environment
-    let (wager, escrow, strk_dispatcher) = setup();
-
-    // Configure wager with escrow
-    start_cheat_caller_address(wager.contract_address, ADMIN());
-    wager.set_escrow_address(escrow.contract_address);
-    stop_cheat_caller_address(wager.contract_address);
-
-
-    // 1. Create a wager and verify Pending state
-    let stake = 1000_u256;
-    let deposit = 2000_u256;
-    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
-
-    let created_wager = wager.get_wager(wager_id);
-    assert!(
-        created_wager.state == WagerState::Pending,
-        "Wager should be in Pending state after creation"
-    );
-
-    // 2. Have another user join the wager and verify Active state
-    let participant = BOB();
-
-    // Fund the participant
-    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
-    strk_dispatcher.transfer(participant, deposit);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Approve escrow to spend tokens
-    start_cheat_caller_address(strk_dispatcher.contract_address, participant);
-    strk_dispatcher.approve(escrow.contract_address, deposit);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Join the wager
-    start_cheat_caller_address(wager.contract_address, participant);
-    wager.join_wager(wager_id, Claim::Yes);
-    stop_cheat_caller_address(wager.contract_address);
-
-    let active_wager = wager.get_wager(wager_id);
-    assert!(
-        active_wager.state == WagerState::Active, "Wager should be in Active state after joining"
-    );
-
-    // 3. Resolve the wager and verify Resolved state
-    start_cheat_caller_address(wager.contract_address, OWNER());
-    wager.resolve_wager(wager_id, OWNER());
-    stop_cheat_caller_address(wager.contract_address);
-
-    let resolved_wager = wager.get_wager(wager_id);
-    assert!(
-        resolved_wager.state == WagerState::Resolved,
-        "Wager should be in Resolved state after resolution"
-    );
-    assert!(resolved_wager.winner == OWNER(), "Winner should be correctly set");
-}
-
-#[test]
-#[should_panic(expected: ('Wager is already resolved',))]
-fn test_cannot_join_resolved_wager() {
-    // Set up the test environment
-    let (wager, escrow, strk_dispatcher) = setup();
-
-    // Configure wager with escrow
-    start_cheat_caller_address(wager.contract_address, ADMIN());
-    wager.set_escrow_address(escrow.contract_address);
-    stop_cheat_caller_address(wager.contract_address);
-
-    // 1. Create a wager
-    let stake = 1000_u256;
-    let deposit = 2000_u256;
-    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
-
-    // 2. Have BOB join the wager
-    let participant = BOB();
-
-    // Fund the participant
-    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
-    strk_dispatcher.transfer(participant, deposit);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Approve escrow to spend tokens
-    start_cheat_caller_address(strk_dispatcher.contract_address, participant);
-    strk_dispatcher.approve(escrow.contract_address, deposit);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Join the wager
-    start_cheat_caller_address(wager.contract_address, participant);
-    wager.join_wager(wager_id, Claim::Yes);
-    stop_cheat_caller_address(wager.contract_address);
-
-    // 3. Resolve the wager
-    start_cheat_caller_address(wager.contract_address, OWNER());
-    wager.resolve_wager(wager_id, OWNER());
-    stop_cheat_caller_address(wager.contract_address);
-
-    // 4. Attempt to have another user join the already resolved wager - should fail
-    let third_participant = ALICE();
-
-    // Fund the third participant
-    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
-    strk_dispatcher.transfer(third_participant, deposit);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Approve escrow to spend tokens
-    start_cheat_caller_address(strk_dispatcher.contract_address, third_participant);
-    strk_dispatcher.approve(escrow.contract_address, deposit);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Try to join the resolved wager - this should panic
-    start_cheat_caller_address(wager.contract_address, third_participant);
-    wager.join_wager(wager_id, Claim::Yes);
-    stop_cheat_caller_address(wager.contract_address);
+    assert(resolved_wager.state == WagerState::Resolved, 'Wager_should_marked_resolved');
 }

@@ -1,17 +1,14 @@
-use starknet::ContractAddress;
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-
-use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, cheat_caller_address, CheatSpan,
-    stop_cheat_block_timestamp,
-};
-
-use contracts::wager::wager::StrkWager;
-use contracts::wager::types::{Mode, Category, Claim, WagerState};
-
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
+use contracts::wager::types::{Category, Claim, Mode, WagerState};
+use contracts::wager::wager::StrkWager;
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+use snforge_std::{
+    CheatSpan, ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait,
+    cheat_caller_address, declare, spy_events, start_cheat_caller_address,
+    stop_cheat_block_timestamp, stop_cheat_caller_address,
+};
+use starknet::ContractAddress;
 
 pub fn OWNER() -> ContractAddress {
     'owner'.try_into().unwrap()
@@ -119,13 +116,11 @@ pub fn create_wager(
                     wager.contract_address,
                     StrkWager::Event::WagerCreated(
                         StrkWager::WagerCreatedEvent {
-
-                            wager_id, category, title, terms, creator, stake, mode, state
-                        }
-                    )
-                )
-            ]
-
+                            wager_id, category, title, terms, creator, stake, mode, state,
+                        },
+                    ),
+                ),
+            ],
         );
 
     wager_id

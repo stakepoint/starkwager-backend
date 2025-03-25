@@ -42,5 +42,5 @@ pub enum WagerState {
     Active,
     VotingPhase,
     Resolved,
-    Cancelled
+    Cancelled,
 }

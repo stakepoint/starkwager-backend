@@ -1,16 +1,15 @@
 #[starknet::contract]
 pub mod Escrow {
-    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map,
-    };
-    use starknet::{ContractAddress, get_contract_address, get_caller_address};
-    use openzeppelin::introspection::src5::SRC5Component;
-    use openzeppelin_access::accesscontrol::{AccessControlComponent};
-    use openzeppelin_access::ownable::OwnableComponent;
-
     use contracts::escrow::interface::IEscrow;
     use core::num::traits::Zero;
+    use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use openzeppelin_access::accesscontrol::AccessControlComponent;
+    use openzeppelin_access::ownable::OwnableComponent;
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
@@ -33,8 +32,8 @@ pub mod Escrow {
     #[storage]
     struct Storage {
         strk_dispatcher: IERC20Dispatcher,
-        user_balance: Map::<ContractAddress, u256>,
-        wager_stake: Map::<u64, u256>, // wager_id -> total stake
+        user_balance: Map<ContractAddress, u256>,
+        wager_stake: Map<u64, u256>, // wager_id -> total stake
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]

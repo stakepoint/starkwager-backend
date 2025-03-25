@@ -1,15 +1,11 @@
-use starknet::ContractAddress;
-use starknet::{testing, contract_address_const};
-
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
-use contracts::tests::utils::{deploy_mock_erc20, OWNER, BOB, deploy_escrow, setup};
-
+use contracts::tests::utils::{BOB, OWNER, deploy_escrow, deploy_mock_erc20, setup};
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, spy_events,
+    start_cheat_caller_address, stop_cheat_caller_address,
 };
+use starknet::{ContractAddress, contract_address_const, testing};
 
 #[test]
 #[should_panic(expected: ('Caller is missing role',))]

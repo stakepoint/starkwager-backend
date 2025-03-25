@@ -1,5 +1,5 @@
+use contracts::wager::types::{Category, Claim, Mode, Wager};
 use starknet::ContractAddress;
-use contracts::wager::types::{Wager, Category, Mode, Claim};
 
 #[starknet::interface]
 pub trait IStrkWager<TContractState> {

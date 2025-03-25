@@ -1,6 +1,6 @@
 pub mod escrow;
-pub mod wager;
 pub mod mock;
+pub mod wager;
 
 
 #[cfg(test)]
