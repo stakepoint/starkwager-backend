@@ -716,7 +716,7 @@ fn test_resolve_wager_based_on_outcome() {
     let title = "My Wager";
     let terms = "My terms";
     let category = Category::Sports;
-    let mode = Mode::Group;
+    let mode = Mode::HeadToHead;
     let claim = Claim::Yes;
 
     let alice = ALICE();
