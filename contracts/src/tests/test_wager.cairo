@@ -826,7 +826,7 @@ fn test_resolve_wager_based_on_outcome() {
     strk_dispatcher.approve(escrow.contract_address, 500_u256);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    start_cheat_caller_address(wager.contract_address, OWNER()); // Simulate Wager Contract
+    start_cheat_caller_address(wager.contract_address, OWNER());
     wager.fund_wallet(deposit);
     stop_cheat_caller_address(wager.contract_address);
 
@@ -846,7 +846,6 @@ fn test_resolve_wager_based_on_outcome() {
     strk_dispatcher.transfer(bob, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // Approve tokens and fund wallets
     start_cheat_caller_address(strk_dispatcher.contract_address, alice);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
@@ -855,21 +854,11 @@ fn test_resolve_wager_based_on_outcome() {
     wager.fund_wallet(stake);
     stop_cheat_caller_address(wager.contract_address);
 
-    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
-    strk_dispatcher.approve(escrow.contract_address, stake);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    start_cheat_caller_address(wager.contract_address, bob);
-    wager.fund_wallet(stake);
-    stop_cheat_caller_address(wager.contract_address);
-
-    // Create the wager
     start_cheat_caller_address(wager.contract_address, OWNER());
     let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode, claim);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Join the wager with claims
-    start_cheat_caller_address(wager.contract_address, ALICE());
+    start_cheat_caller_address(wager.contract_address, alice);
     wager.join_wager(wager_id, final_outcome);
     stop_cheat_caller_address(wager.contract_address);
 
@@ -877,13 +866,77 @@ fn test_resolve_wager_based_on_outcome() {
     wager.join_wager(wager_id, Claim::No);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Resolve the wager
     start_cheat_caller_address(wager.contract_address, OWNER());
     wager.resolve_wager_based_on_outcome(wager_id, final_outcome);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Fetch the resolved wager and assert winner
     let resolved_wager = wager.get_wager(wager_id);
     assert_eq!(resolved_wager.winner, OWNER(), "first_participant_winner");
     assert(resolved_wager.state == WagerState::Resolved, 'Wager_should_marked_resolved');
 }
+
+#[test]
+#[should_panic(expected: 'Participant already submitted')]
+fn test_submit_outcome_fail_double_submit() {
+    let (wager, escrow, strk_dispatcher) = setup();
+    let bob = BOB();
+
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let stake = 100_u256;
+    let deposit = 20_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.submit_outcome(wager_id, true);
+    wager.submit_outcome(wager_id, true);
+}
+
+#[test]
+#[should_panic(expected: 'Wager is already resolved')]
+fn test_submit_outcome_fail_wager_resolved() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let stake = 1000_u256;
+    let deposit = 2000_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    let participant = BOB();
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(participant, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, participant);
+    strk_dispatcher.approve(escrow.contract_address, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, participant);
+    wager.join_wager(wager_id, Claim::Yes);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    wager.resolve_wager(wager_id, OWNER());
+    stop_cheat_caller_address(wager.contract_address);
+
+    let third_participant = ALICE();
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(third_participant, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, third_participant);
+    strk_dispatcher.approve(escrow.contract_address, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, third_participant);
+    wager.submit_outcome(wager_id, true);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+}
+
