@@ -405,12 +405,12 @@ fn test_resolve_wager() {
     let (wager, escrow, strk_dispatcher) = setup();
 
     let owner = OWNER();
-    
+
     // Configure wager with escrow
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
-    
+
     // Create a wager
     let stake = 100_u256;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
@@ -760,7 +760,7 @@ fn test_wager_state_transitions() {
     let created_wager = wager.get_wager(wager_id);
     assert!(
         created_wager.state == WagerState::Pending,
-        "Wager should be in Pending state after creation"
+        "Wager should be in Pending state after creation",
     );
 
     // 2. Have another user join the wager and verify Active state
@@ -783,7 +783,7 @@ fn test_wager_state_transitions() {
 
     let active_wager = wager.get_wager(wager_id);
     assert!(
-        active_wager.state == WagerState::Active, "Wager should be in Active state after joining"
+        active_wager.state == WagerState::Active, "Wager should be in Active state after joining",
     );
 
     // 3. Resolve the wager and verify Resolved state
@@ -794,7 +794,7 @@ fn test_wager_state_transitions() {
     let resolved_wager = wager.get_wager(wager_id);
     assert!(
         resolved_wager.state == WagerState::Resolved,
-        "Wager should be in Resolved state after resolution"
+        "Wager should be in Resolved state after resolution",
     );
     assert!(resolved_wager.winner == OWNER(), "Winner should be correctly set");
 }
@@ -888,10 +888,10 @@ fn test_submit_outcome_pass() {
                 (
                     wager.contract_address,
                     StrkWager::Event::OutcomeSubmitted(
-                        StrkWager::OutcomeSubmittedEvent { wager_id, participant: bob, vote }
-                    )
-                )
-            ]
+                        StrkWager::OutcomeSubmittedEvent { wager_id, participant: bob, vote },
+                    ),
+                ),
+            ],
         );
 }
 
