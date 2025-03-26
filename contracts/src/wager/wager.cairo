@@ -36,6 +36,10 @@ pub mod StrkWager {
         wager_participants_claim: Map::<
             u64, Map<ContractAddress, Claim>,
         >, // wager_id -> participant -> Claim
+        wager_outcome_votes: Map<(u64, ContractAddress), bool>, // wager_id -> participant -> vote
+        wager_outcome_submitted: Map<
+            (u64, ContractAddress), bool
+        >, // wager_id -> participant ->  submitted
         claim: Claim,
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
@@ -52,6 +56,7 @@ pub mod StrkWager {
         EscrowAddressUpdated: EscrowAddressEvent,
         WagerCreated: WagerCreatedEvent,
         WagerJoined: WagerJoinedEvent,
+        OutcomeSubmitted: OutcomeSubmittedEvent,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
         #[flat]
@@ -82,6 +87,13 @@ pub mod StrkWager {
     pub struct WagerJoinedEvent {
         pub wager_id: u64,
         pub participant: ContractAddress,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct OutcomeSubmittedEvent {
+        pub wager_id: u64,
+        pub participant: ContractAddress,
+        pub vote: bool,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -160,6 +172,7 @@ pub mod StrkWager {
             self.wager_count.write(wager_id);
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
             self.wager_participants.entry(wager_id).entry(participant_id).write(creator);
+            self.wager_outcome_submitted.entry((wager_id, creator)).write(false);
             self.wager_participants_mapping.entry((wager_id, creator)).write(true);
             self.wager_participants_count.entry(wager_id).write(participant_id);
             self._submit_claim(wager_id, creator, claim);
@@ -277,6 +290,30 @@ pub mod StrkWager {
             self: @ContractState, wager_id: u64, caller: ContractAddress,
         ) -> bool {
             self.wager_participants_mapping.entry((wager_id, caller)).read()
+        }
+
+        fn has_outcome_submitted(
+            self: @ContractState, wager_id: u64, caller: ContractAddress
+        ) -> bool {
+            self.wager_outcome_submitted.entry((wager_id, caller)).read()
+        }
+
+        fn submit_outcome(ref self: ContractState, wager_id: u64, vote: bool) {
+            let wager = self.get_wager(wager_id);
+            let caller = get_caller_address();
+
+            assert(!wager.creator.is_zero(), 'Wager does not exist');
+            assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
+
+            // Check if caller is a participant
+            assert(!self.is_wager_participant(wager_id, caller), 'Not a participant');
+
+            assert(!self.has_outcome_submitted(wager_id, caller), 'Participant already submitted');
+
+            self.wager_outcome_votes.entry((wager_id, caller)).write(vote);
+            self.wager_outcome_submitted.entry((wager_id, caller)).write(true);
+
+            self.emit(OutcomeSubmittedEvent { wager_id, participant: caller, vote });
         }
     }
 
