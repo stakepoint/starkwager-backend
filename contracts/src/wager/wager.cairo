@@ -52,6 +52,7 @@ pub mod StrkWager {
         EscrowAddressUpdated: EscrowAddressEvent,
         WagerCreated: WagerCreatedEvent,
         WagerJoined: WagerJoinedEvent,
+        WagerCancelled: WagerEventCancelled,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
         #[flat]
@@ -81,6 +82,11 @@ pub mod StrkWager {
     pub struct WagerJoinedEvent {
         pub wager_id: u64,
         pub participant: ContractAddress,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct WagerEventCancelled {
+        pub wager_id: u64,
     }
 
     const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE"); // Unique identifier for the role
@@ -180,6 +186,7 @@ pub mod StrkWager {
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
+            assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
 
             // Check if caller is already a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
@@ -258,6 +265,16 @@ pub mod StrkWager {
             wager.winner = winner;
 
             self.wagers.entry(wager_id).write(wager);
+        }
+
+        fn cancel_wager(ref self: ContractState, wager_id: u64) {
+            let mut wager = self.wagers.entry(wager_id).read();
+            assert(wager.state != WagerState::Cancelled, 'Wager is already cancelled');
+            let participants = self.wager_participants_count.entry(wager_id).read();
+            assert(participants == 0, 'Wager cannot be cancelled');
+            wager.state = WagerState::Resolved;
+            self.wagers.entry(wager_id).write(wager);
+            self.emit(WagerEventCancelled { wager_id });
         }
 
         fn is_wager_participant(
