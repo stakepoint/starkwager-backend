@@ -807,3 +807,170 @@ fn test_cannot_join_resolved_wager() {
     wager.join_wager(wager_id, Claim::Yes);
     stop_cheat_caller_address(wager.contract_address);
 }
+
+#[test]
+fn test_submit_outcome_pass() {
+    // Deploy contracts
+    let (wager, escrow, strk_dispatcher) = setup();
+    let bob = BOB();
+
+    let mut spy = spy_events();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let deposit = 20_u256; // Insufficient deposit
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    start_cheat_caller_address(wager.contract_address, bob);
+
+    let vote = true;
+    wager.submit_outcome(wager_id, vote);
+
+    assert(wager.has_outcome_submitted(wager_id, bob), 'outcome not registered');
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    wager.contract_address,
+                    StrkWager::Event::OutcomeSubmitted(
+                        StrkWager::OutcomeSubmittedEvent { wager_id, participant: bob, vote }
+                    )
+                )
+            ]
+        );
+}
+
+#[test]
+#[should_panic(expected: 'Participant already submitted')]
+fn test_submit_outcome_fail_double_submit() {
+    // Deploy contracts
+    let (wager, escrow, strk_dispatcher) = setup();
+    let bob = BOB();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let deposit = 20_u256; // Insufficient deposit
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    start_cheat_caller_address(wager.contract_address, bob);
+
+    wager.submit_outcome(wager_id, true);
+
+    wager.submit_outcome(wager_id, true);
+}
+
+#[test]
+#[should_panic(expected: 'Wager is already resolved')]
+fn test_submit_outcome_fail_wager_resolved() {
+    // Set up the test environment
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // 1. Create a wager
+    let stake = 1000_u256;
+    let deposit = 2000_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    // 2. Have BOB join the wager
+    let participant = BOB();
+
+    // Fund the participant
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(participant, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Approve escrow to spend tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, participant);
+    strk_dispatcher.approve(escrow.contract_address, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, participant);
+    wager.join_wager(wager_id, Claim::Yes);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // 3. Resolve the wager
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    wager.resolve_wager(wager_id, OWNER());
+    stop_cheat_caller_address(wager.contract_address);
+
+    // 4. Attempt to have another user join the already resolved wager - should fail
+    let third_participant = ALICE();
+
+    // Fund the third participant
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(third_participant, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Approve escrow to spend tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, third_participant);
+    strk_dispatcher.approve(escrow.contract_address, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Try to join the resolved wager - this should panic
+    start_cheat_caller_address(wager.contract_address, third_participant);
+    wager.submit_outcome(wager_id, true);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Not a participant')]
+fn test_submit_outcome_fail_not_a_participant() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let claim = Claim::Yes;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+
+    let owner = OWNER();
+    let bob = BOB();
+
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Try to submit outcome - should panic
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.submit_outcome(wager_id, true);
+    stop_cheat_caller_address(wager.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Wager does not exist')]
+fn test_submit_outcome_fail_wager_no_exists() {
+    let (wager, _, _) = setup();
+
+    wager.submit_outcome(1, true);
+}

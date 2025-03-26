@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsOptional,
@@ -5,6 +6,8 @@ import {
   IsNumber,
   IsPositive,
   IsEnum,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 
 enum WagerStatus {
@@ -61,4 +64,11 @@ export class GetWagersQueryDto {
   @IsOptional()
   @IsString()
   filterType?: 'AND' | 'OR';
+}
+
+export class BulkCreateWagerDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateWagerDto)
+  wagers: CreateWagerDto[];
 }

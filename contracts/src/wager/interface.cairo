@@ -27,4 +27,6 @@ pub trait IStrkWager<TContractState> {
     fn resolve_wager(ref self: TContractState, wager_id: u64, winner: ContractAddress);
     fn cancel_wager(ref self: TContractState, wager_id: u64);
     fn is_wager_participant(self: @TContractState, wager_id: u64, caller: ContractAddress) -> bool;
+    fn has_outcome_submitted(self: @TContractState, wager_id: u64, caller: ContractAddress) -> bool;
+    fn submit_outcome(ref self: TContractState, wager_id: u64, vote: bool);
 }
