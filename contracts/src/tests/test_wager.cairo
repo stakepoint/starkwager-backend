@@ -954,7 +954,7 @@ fn test_submit_outcome_fail_wager_resolved() {
     stop_cheat_caller_address(wager.contract_address);
 
     // 3. Resolve the wager
-    start_cheat_caller_address(wager.contract_address, OWNER());
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.resolve_wager(wager_id, OWNER());
     stop_cheat_caller_address(wager.contract_address);
 
