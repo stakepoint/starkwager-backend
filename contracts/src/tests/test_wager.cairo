@@ -405,7 +405,12 @@ fn test_resolve_wager() {
     let (wager, escrow, strk_dispatcher) = setup();
 
     let owner = OWNER();
-
+    
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+    
     // Create a wager
     let stake = 100_u256;
     let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
@@ -782,7 +787,7 @@ fn test_wager_state_transitions() {
     );
 
     // 3. Resolve the wager and verify Resolved state
-    start_cheat_caller_address(wager.contract_address, OWNER());
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.resolve_wager(wager_id, OWNER());
     stop_cheat_caller_address(wager.contract_address);
 
@@ -829,7 +834,7 @@ fn test_cannot_join_resolved_wager() {
     stop_cheat_caller_address(wager.contract_address);
 
     // 3. Resolve the wager
-    start_cheat_caller_address(wager.contract_address, OWNER());
+    start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.resolve_wager(wager_id, OWNER());
     stop_cheat_caller_address(wager.contract_address);
 
