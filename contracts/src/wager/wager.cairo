@@ -93,8 +93,8 @@ pub mod StrkWager {
     pub struct WagerEventCancelled {
         pub wager_id: u64,
     }
-    
-    #[derive(Drop, starknet::Event)]    
+
+    #[derive(Drop, starknet::Event)]
     pub struct OutcomeSubmittedEvent {
         pub wager_id: u64,
         pub participant: ContractAddress,
@@ -284,8 +284,10 @@ pub mod StrkWager {
             let mut wager = self.wagers.entry(wager_id).read();
             assert(wager.state != WagerState::Cancelled, 'Wager is already cancelled');
             let participants = self.wager_participants_count.entry(wager_id).read();
-            assert(participants == 0, 'Wager cannot be cancelled');
-            wager.state = WagerState::Resolved;
+            assert(
+                participants == 1, 'Wager cannot be cancelled'
+            ); // 1 because the wager by default has the creator as a participant
+            wager.state = WagerState::Cancelled;
             self.wagers.entry(wager_id).write(wager);
             self.emit(WagerEventCancelled { wager_id });
         }
