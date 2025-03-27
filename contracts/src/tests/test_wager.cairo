@@ -1023,3 +1023,111 @@ fn test_submit_outcome_fail_wager_no_exists() {
 
     wager.submit_outcome(1, true);
 }
+
+
+#[test]
+fn test_cancel_wager() {
+    let (wager, escrow, strk_dispatcher) = setup();
+    let mut spy = spy_events();
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let stake = 1000_u256;
+    let deposit = 2000_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    let created_wager = wager.get_wager(wager_id);
+    assert!(
+        created_wager.state == WagerState::Pending,
+        "Wager should be in Pending state after creation"
+    );
+
+    let participants = wager.get_wager_participants(wager_id);
+    for participant_address in participants {
+        println!("participant_address {:?}", participant_address);
+    };
+    println!("the participants in this pool are {:?}", participants);
+    // cancel a wager
+    wager.cancel_wager(wager_id);
+    let created_wager = wager.get_wager(wager_id);
+
+    assert(created_wager.state == WagerState::Cancelled, 'Wager should be cancelled');
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    wager.contract_address,
+                    StrkWager::Event::WagerCancelled(StrkWager::WagerEventCancelled { wager_id })
+                )
+            ]
+        );
+}
+
+#[test]
+#[should_panic(expected: 'Wager is already cancelled')]
+fn test_cancel_wager_should_panic_if_wager_cancelled() {
+    let (wager, escrow, strk_dispatcher) = setup();
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let stake = 1000_u256;
+    let deposit = 2000_u256;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, deposit, stake);
+
+    wager.cancel_wager(wager_id);
+    wager.cancel_wager(wager_id);
+}
+
+#[test]
+#[should_panic(expected: 'Wager cannot be cancelled')]
+fn test_cancel_wager_should_panic_if_wager_is_not_empty() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    let mut spy = spy_events();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create a wager
+    let stake = 100_u256;
+    let claim = Claim::Yes;
+    let wager_id = create_wager(wager, escrow, strk_dispatcher, stake, stake);
+
+    let owner = OWNER();
+    let bob = BOB();
+
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id, claim);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let participants = wager.get_wager_participants(wager_id);
+    let mut found = false;
+    for participant_address in participants {
+        if participant_address == @owner {
+            found = true;
+            break;
+        }
+    };
+    assert!(found, "Participant should be added to the wager");
+    wager.cancel_wager(wager_id);
+}

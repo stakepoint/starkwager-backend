@@ -56,6 +56,7 @@ pub mod StrkWager {
         EscrowAddressUpdated: EscrowAddressEvent,
         WagerCreated: WagerCreatedEvent,
         WagerJoined: WagerJoinedEvent,
+        WagerCancelled: WagerEventCancelled,
         OutcomeSubmitted: OutcomeSubmittedEvent,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
@@ -87,6 +88,11 @@ pub mod StrkWager {
     pub struct WagerJoinedEvent {
         pub wager_id: u64,
         pub participant: ContractAddress,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct WagerEventCancelled {
+        pub wager_id: u64,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -200,6 +206,7 @@ pub mod StrkWager {
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
+            assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
 
             // Check if caller is already a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
@@ -284,6 +291,18 @@ pub mod StrkWager {
             self.wagers.entry(wager_id).write(wager);
 
             self.emit(WagerResolvedEvent { wager_id, winner });
+        }
+
+        fn cancel_wager(ref self: ContractState, wager_id: u64) {
+            let mut wager = self.wagers.entry(wager_id).read();
+            assert(wager.state != WagerState::Cancelled, 'Wager is already cancelled');
+            let participants = self.wager_participants_count.entry(wager_id).read();
+            assert(
+                participants == 1, 'Wager cannot be cancelled'
+            ); // 1 because the wager by default has the creator as a participant
+            wager.state = WagerState::Cancelled;
+            self.wagers.entry(wager_id).write(wager);
+            self.emit(WagerEventCancelled { wager_id });
         }
 
         fn is_wager_participant(
