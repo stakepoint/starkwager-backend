@@ -17,6 +17,7 @@ import { InvitationModule } from './wagerInvitations/wagerInvitations.module';
 import { WagerClaimModule } from './wager-claim/wager-claim.module';
 import { NotificationModule } from './notification/notification.module';
 import { IndexerModule } from './indexer/indexer.module';
+import { EmailNotificationModule } from './email-notification/email-notification.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { IndexerModule } from './indexer/indexer.module';
     HashtagsModule,
     InvitationModule,
     NotificationModule,
+    EmailNotificationModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,

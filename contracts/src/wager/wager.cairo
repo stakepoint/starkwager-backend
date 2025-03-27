@@ -12,7 +12,7 @@ pub mod StrkWager {
     use contracts::wager::interface::IStrkWager;
     use contracts::wager::types::{Wager, Category, Mode, Claim, WagerState};
     use openzeppelin::introspection::src5::SRC5Component;
-    use openzeppelin_access::accesscontrol::{AccessControlComponent};
+    use openzeppelin::access::accesscontrol::{AccessControlComponent};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
@@ -34,7 +34,7 @@ pub mod StrkWager {
         wager_participants: Map<u64, Map<u64, ContractAddress>>, // wager_id -> idx -> participants
         wager_participants_mapping: Map<(u64, ContractAddress), bool>,
         wager_participants_claim: Map::<
-            u64, Map<ContractAddress, Claim>
+            u64, Map<ContractAddress, Claim>,
         >, // wager_id -> participant -> Claim
         wager_outcome_votes: Map<(u64, ContractAddress), bool>, // wager_id -> participant -> vote
         wager_outcome_submitted: Map<
@@ -56,12 +56,14 @@ pub mod StrkWager {
         EscrowAddressUpdated: EscrowAddressEvent,
         WagerCreated: WagerCreatedEvent,
         WagerJoined: WagerJoinedEvent,
+        WagerCancelled: WagerEventCancelled,
         OutcomeSubmitted: OutcomeSubmittedEvent,
         WagerResolvedEvent: WagerResolvedEvent,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
         #[flat]
         SRC5Event: SRC5Component::Event,
+        WagerResolvedEvent: WagerResolvedEvent,
     }
 
 
@@ -90,6 +92,11 @@ pub mod StrkWager {
     }
 
     #[derive(Drop, starknet::Event)]
+    pub struct WagerEventCancelled {
+        pub wager_id: u64,
+    }
+
+    #[derive(Drop, starknet::Event)]
     pub struct OutcomeSubmittedEvent {
         pub wager_id: u64,
         pub participant: ContractAddress,
@@ -98,17 +105,17 @@ pub mod StrkWager {
 
     #[derive(Drop, starknet::Event)]
     pub struct WagerResolvedEvent {
-        wager_id: u64,
-        winner: ContractAddress,
-        final_outcome: Claim,
-        }
+        pub wager_id: u64,
+        pub winner: ContractAddress,
+        pub final_outcome: Claim,
+    }
 
     const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE"); // Unique identifier for the role
 
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, admin_contract: ContractAddress, strk_address: ContractAddress
+        ref self: ContractState, admin_contract: ContractAddress, strk_address: ContractAddress,
     ) {
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(ADMIN_ROLE, admin_contract);
@@ -150,7 +157,7 @@ pub mod StrkWager {
             terms: ByteArray,
             stake: u256,
             mode: Mode,
-            claim: Claim
+            claim: Claim,
         ) -> u64 {
             assert(self._has_sufficient_balance(stake), 'Insufficient balance');
 
@@ -201,6 +208,7 @@ pub mod StrkWager {
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
+            assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
 
             // Check if caller is already a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
@@ -208,7 +216,7 @@ pub mod StrkWager {
             if wager.mode == Mode::HeadToHead {
                 assert(
                     self.wager_participants_count.entry(wager_id).read() == 1,
-                    'Head-to-head wager full'
+                    'Head-to-head wager full',
                 );
             }
             assert(self._has_sufficient_balance(wager.stake), 'Insufficient balance');
@@ -251,7 +259,7 @@ pub mod StrkWager {
         }
 
         fn get_wager_participant_claim(
-            self: @ContractState, wager_id: u64, participant: ContractAddress
+            self: @ContractState, wager_id: u64, participant: ContractAddress,
         ) -> Claim {
             self._get_participant_claim(wager_id, participant)
         }
@@ -270,19 +278,37 @@ pub mod StrkWager {
             self.emit(EscrowAddressEvent { old_address: old_address, new_address: new_address });
         }
 
-        //TODO
         fn resolve_wager(ref self: ContractState, wager_id: u64, winner: ContractAddress) {
+            self.accesscontrol.assert_only_role(ADMIN_ROLE);
+
             let mut wager = self.wagers.entry(wager_id).read();
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
+            assert(!wager.creator.is_zero(), 'Wager does not exist');
+
+            assert(self.is_wager_participant(wager_id, winner), 'Winner is not a participant');
 
             wager.state = WagerState::Resolved;
             wager.winner = winner;
 
             self.wagers.entry(wager_id).write(wager);
+
+            self.emit(WagerResolvedEvent { wager_id, winner });
+        }
+
+        fn cancel_wager(ref self: ContractState, wager_id: u64) {
+            let mut wager = self.wagers.entry(wager_id).read();
+            assert(wager.state != WagerState::Cancelled, 'Wager is already cancelled');
+            let participants = self.wager_participants_count.entry(wager_id).read();
+            assert(
+                participants == 1, 'Wager cannot be cancelled'
+            ); // 1 because the wager by default has the creator as a participant
+            wager.state = WagerState::Cancelled;
+            self.wagers.entry(wager_id).write(wager);
+            self.emit(WagerEventCancelled { wager_id });
         }
 
         fn is_wager_participant(
-            self: @ContractState, wager_id: u64, caller: ContractAddress
+            self: @ContractState, wager_id: u64, caller: ContractAddress,
         ) -> bool {
             self.wager_participants_mapping.entry((wager_id, caller)).read()
         }
@@ -396,13 +422,13 @@ pub mod StrkWager {
         }
 
         fn _submit_claim(
-            ref self: ContractState, wager_id: u64, participant: ContractAddress, claim: Claim
+            ref self: ContractState, wager_id: u64, participant: ContractAddress, claim: Claim,
         ) {
             self.wager_participants_claim.entry(wager_id).entry(participant).write(claim);
         }
 
         fn _get_participant_claim(
-            self: @ContractState, wager_id: u64, participant: ContractAddress
+            self: @ContractState, wager_id: u64, participant: ContractAddress,
         ) -> Claim {
             self.wager_participants_claim.entry(wager_id).entry(participant).read()
         }
