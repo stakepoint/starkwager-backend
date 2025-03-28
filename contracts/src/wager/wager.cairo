@@ -334,6 +334,48 @@ pub mod StrkWager {
 
             self.emit(OutcomeSubmittedEvent { wager_id, participant: caller, vote });
         }
+
+        fn resolve_wager_based_on_outcome(
+            ref self: ContractState, wager_id: u64, final_outcome: Claim,
+        ) {
+            let mut wager = self.wagers.entry(wager_id).read();
+
+            assert(wager.state != WagerState::Resolved, 'wager_is_already_resolved');
+
+            match wager.mode {
+                Mode::HeadToHead => {
+                    let participant_count = self.wager_participants_count.entry(wager_id).read();
+                    assert(participant_count > 0, 'wager_have_no_participants');
+
+                    let mut winner = contract_address_const::<0>();
+                    let mut i = 1;
+
+                    while i <= participant_count {
+                        let participant = self.wager_participants.entry(wager_id).entry(i).read();
+                        let claim = self
+                            .wager_participants_claim
+                            .entry(wager_id)
+                            .entry(participant)
+                            .read();
+
+                        if claim == final_outcome {
+                            winner = participant;
+                            break;
+                        }
+                        i += 1;
+                    };
+
+                    assert(!winner.is_zero(), 'no_matching_claim');
+                    let updated_wager = Wager { state: WagerState::Resolved, winner, ..wager };
+
+                    self.wagers.entry(wager_id).write(updated_wager);
+
+                    // Emit an event for resolution
+                    self.emit(WagerResolvedEvent { wager_id, winner });
+                },
+                Mode::Group => { assert(false, 'not_group_allow'); },
+            }
+        }
     }
 
     #[generate_trait]

@@ -1131,3 +1131,66 @@ fn test_cancel_wager_should_panic_if_wager_is_not_empty() {
     assert!(found, "Participant should be added to the wager");
     wager.cancel_wager(wager_id);
 }
+
+#[test]
+fn test_resolve_wager_based_on_outcome() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    let mut spy = spy_events();
+
+    let stake = 100_u256;
+    let deposit = 100_u256;
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.approve(escrow.contract_address, 500_u256);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    wager.fund_wallet(deposit);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create the wager
+    let title = "My Wager";
+    let terms = "My terms";
+    let category = Category::Sports;
+    let mode = Mode::HeadToHead;
+    let claim = Claim::No;
+
+    let alice = ALICE();
+    let bob = BOB();
+    let final_outcome = Claim::Yes;
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(alice, stake);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, alice);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, alice);
+    wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode, claim);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, alice);
+    wager.join_wager(wager_id, final_outcome);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    wager.resolve_wager_based_on_outcome(wager_id, final_outcome);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let resolved_wager = wager.get_wager(wager_id);
+    assert_eq!(resolved_wager.winner, alice, "alice_should_winner");
+    assert(resolved_wager.state == WagerState::Resolved, 'Wager_should_marked_resolved');
+}
