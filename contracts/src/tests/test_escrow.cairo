@@ -4,17 +4,14 @@ use starknet::{testing, contract_address_const};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
-use contracts::tests::utils::{deploy_mock_erc20, OWNER, BOB, deploy_escrow, setup};
+use contracts::tests::utils::{OWNER, BOB, deploy_escrow, setup};
 
-use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
-};
+use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address,};
 
 #[test]
 #[should_panic(expected: ('Caller is missing role',))]
 fn test_deposit_to_wallet_unauthorized() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (_, escrow, strk_dispatcher) = setup();
 
     let amount = 50_u256;
 
@@ -99,7 +96,7 @@ fn test_withdraw_from_wallet() {
 #[test]
 #[should_panic(expected: ('Caller is missing role',))]
 fn test_withdraw_from_wallet_unauthorized() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (_, escrow, strk_dispatcher) = setup();
 
     let initial_balance = 1000_u256;
     let withdrawal_amount = 500_u256;
@@ -146,7 +143,7 @@ fn test_get_balance() {
 #[test]
 #[should_panic(expected: ('Invalid address',))]
 fn test_deposit_to_wallet_zero_address() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (wager, escrow, _) = setup();
 
     // deposit to wallet
     start_cheat_caller_address(escrow.contract_address, wager.contract_address);
@@ -156,7 +153,7 @@ fn test_deposit_to_wallet_zero_address() {
 #[test]
 #[should_panic(expected: ('Invalid address',))]
 fn test_withdraw_from_wallet_zero_address() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (wager, escrow, _) = setup();
 
     // withdraw from wallet
     start_cheat_caller_address(escrow.contract_address, wager.contract_address);
@@ -204,7 +201,7 @@ fn test_amount_must_be_positive() {
 #[test]
 #[should_panic(expected: ('Caller is missing role',))]
 fn test_get_balance_unauthorized() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (_, escrow, strk_dispatcher) = setup();
 
     let amount = 50_u256;
 
@@ -277,7 +274,7 @@ fn test_fund_wager_insufficient_balance() {
 #[test]
 #[should_panic(expected: ('Caller is missing role',))]
 fn test_fund_wager_unauthorized() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (_, escrow, _) = setup();
 
     let wager_amount = 50_u256;
     let wager_id = 1_u64;
@@ -329,7 +326,7 @@ fn test_fund_multiple_wagers() {
 #[test]
 #[should_panic(expected: ('Invalid address',))]
 fn test_fund_wager_zero_address() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (wager, escrow, _) = setup();
 
     let wager_id = 1_u64;
     let amount = 50_u256;
@@ -342,7 +339,7 @@ fn test_fund_wager_zero_address() {
 #[test]
 #[should_panic(expected: ('Amount must be positive',))]
 fn test_fund_wager_zero_amount() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (wager, escrow, _) = setup();
 
     let wager_id = 1_u64;
     let amount = 0_u256;

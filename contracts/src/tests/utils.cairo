@@ -4,7 +4,6 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
     stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, cheat_caller_address, CheatSpan,
-    stop_cheat_block_timestamp
 };
 
 use contracts::wager::wager::StrkWager;
@@ -81,12 +80,12 @@ pub fn setup() -> (IStrkWagerDispatcher, IEscrowDispatcher, IERC20Dispatcher) {
     (wager, escrow, strk_dispatcher)
 }
 
-pub fn create_wager(
+pub fn create_head_to_head_wager(
     wager: IStrkWagerDispatcher,
     escrow: IEscrowDispatcher,
     strk_dispatcher: IERC20Dispatcher,
     deposit: u256,
-    stake: u256,
+    stake: u256
 ) -> u64 {
     let creator = OWNER();
     let mut spy = spy_events();

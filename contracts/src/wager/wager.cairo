@@ -40,7 +40,6 @@ pub mod StrkWager {
         wager_outcome_submitted: Map<
             (u64, ContractAddress), bool
         >, // wager_id -> participant ->  submitted
-        claim: Claim,
         wager_participants_count: Map<u64, u64>, // wager_id -> count
         escrow_address: ContractAddress,
         strk_address: ContractAddress,
@@ -216,7 +215,16 @@ pub mod StrkWager {
                     self.wager_participants_count.entry(wager_id).read() == 1,
                     'Head-to-head wager full',
                 );
+
+                // Get the claim of the existing participant in head-to-head mode
+                let first_participant = self.wager_participants.entry(wager_id).entry(1).read();
+                let first_participant_claim = self
+                    ._get_participant_claim(wager_id, first_participant);
+
+                // Ensure opposing claims in head-to-head wagers
+                assert(first_participant_claim != claim, 'Claims must be opposing');
             }
+
             assert(self._has_sufficient_balance(wager.stake), 'Insufficient balance');
 
             let participant_id = self.wager_participants_count.entry(wager_id).read() + 1;
