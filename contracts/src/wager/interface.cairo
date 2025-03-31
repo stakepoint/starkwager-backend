@@ -32,4 +32,5 @@ pub trait IStrkWager<TContractState> {
     fn resolve_wager_based_on_outcome(
         ref self: TContractState, wager_id: u64, final_outcome: Claim,
     );
+    fn check_resolution(self: @TContractState, wager_id: u64) -> Option<bool>;
 }
