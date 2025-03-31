@@ -6,9 +6,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 use contracts::tests::utils::{OWNER, BOB, deploy_escrow, setup};
 
-use snforge_std::{
-    start_cheat_caller_address, stop_cheat_caller_address,
-};
+use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address,};
 
 #[test]
 #[should_panic(expected: ('Caller is missing role',))]
