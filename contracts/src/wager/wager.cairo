@@ -207,8 +207,6 @@ pub mod StrkWager {
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
             assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
-
-            // Check if caller is already a participant
             assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
 
             if wager.mode == Mode::HeadToHead {
@@ -216,6 +214,11 @@ pub mod StrkWager {
                     self.wager_participants_count.entry(wager_id).read() == 1,
                     'Head-to-head wager full',
                 );
+                // Add claim opposition check
+                let first_participant = self.wager_participants.entry(wager_id).entry(1).read();
+                let first_participant_claim = self
+                    ._get_participant_claim(wager_id, first_participant);
+                assert(first_participant_claim != claim, 'Claims must be opposing');
             }
             assert(self._has_sufficient_balance(wager.stake), 'Insufficient balance');
 
@@ -325,7 +328,7 @@ pub mod StrkWager {
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
 
             // Check if caller is a participant
-            assert(!self.is_wager_participant(wager_id, caller), 'Not a participant');
+            assert(self.is_wager_participant(wager_id, caller), 'Not a participant');
 
             assert(!self.has_outcome_submitted(wager_id, caller), 'Participant already submitted');
 
@@ -378,55 +381,61 @@ pub mod StrkWager {
         }
 
         fn check_resolution(self: @ContractState, wager_id: u64) -> Option<bool> {
-        // Get the wager
-        let wager = self.wagers.entry(wager_id).read();
-        
-        // Verify wager exists
-        assert(!wager.creator.is_zero(), 'Wager does not exist');
-        
-        // Verify wager hasn't been resolved
-        assert(wager.state != WagerState::Resolved, 'Wager already resolved');
-        assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
+            // Get the wager
+            let wager = self.wagers.entry(wager_id).read();
 
-        // Handle based on wager mode
-        match wager.mode {
-            Mode::HeadToHead => {
-                // Check participant count (should be 2 for head-to-head)
-                let participant_count = self.wager_participants_count.entry(wager_id).read();
-                if participant_count != 2 {
-                    return Option::None; // Not enough participants yet
+            // Verify wager exists
+            assert(!wager.creator.is_zero(), 'Wager does not exist');
+
+            // Verify wager hasn't been resolved
+            assert(wager.state != WagerState::Resolved, 'Wager already resolved');
+            assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
+
+            // Handle based on wager mode
+            match wager.mode {
+                Mode::HeadToHead => {
+                    // Check participant count (should be 2 for head-to-head)
+                    let participant_count = self.wager_participants_count.entry(wager_id).read();
+                    if participant_count != 2 {
+                        return Option::None; // Not enough participants yet
+                    }
+
+                    // Get both participants
+                    let participant1 = self.wager_participants.entry(wager_id).entry(1).read();
+                    let participant2 = self.wager_participants.entry(wager_id).entry(2).read();
+
+                    // Check if both have submitted outcomes
+                    let submitted1 = self
+                        .wager_outcome_submitted
+                        .entry((wager_id, participant1))
+                        .read();
+                    let submitted2 = self
+                        .wager_outcome_submitted
+                        .entry((wager_id, participant2))
+                        .read();
+
+                    if !submitted1 || !submitted2 {
+                        return Option::None; // Not all outcomes submitted
+                    }
+
+                    // Get the submitted outcomes
+                    let vote1 = self.wager_outcome_votes.entry((wager_id, participant1)).read();
+                    let vote2 = self.wager_outcome_votes.entry((wager_id, participant2)).read();
+
+                    // Check if they agree
+                    if vote1 == vote2 {
+                        Option::Some(vote1) // Consensus reached, return the outcome
+                    } else {
+                        Option::None // No consensus
+                    }
+                },
+                Mode::Group => {
+                    // For now, return None as group mode resolution isn't specified
+                    // Could be extended later with different consensus rules
+                    Option::None
                 }
-
-                // Get both participants
-                let participant1 = self.wager_participants.entry(wager_id).entry(1).read();
-                let participant2 = self.wager_participants.entry(wager_id).entry(2).read();
-
-                // Check if both have submitted outcomes
-                let submitted1 = self.wager_outcome_submitted.entry((wager_id, participant1)).read();
-                let submitted2 = self.wager_outcome_submitted.entry((wager_id, participant2)).read();
-
-                if !submitted1 || !submitted2 {
-                    return Option::None; // Not all outcomes submitted
-                }
-
-                // Get the submitted outcomes
-                let vote1 = self.wager_outcome_votes.entry((wager_id, participant1)).read();
-                let vote2 = self.wager_outcome_votes.entry((wager_id, participant2)).read();
-
-                // Check if they agree
-                if vote1 == vote2 {
-                    Option::Some(vote1) // Consensus reached, return the outcome
-                } else {
-                    Option::None // No consensus
-                }
-            },
-            Mode::Group => {
-                // For now, return None as group mode resolution isn't specified
-                // Could be extended later with different consensus rules
-                Option::None
             }
         }
-    }
     }
 
     #[generate_trait]
