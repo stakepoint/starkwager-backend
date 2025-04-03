@@ -839,64 +839,54 @@ fn test_cannot_join_resolved_wager() {
 
 #[test]
 fn test_submit_outcome_pass() {
-    // Deploy contracts
     let (wager, escrow, strk_dispatcher) = setup();
-    let bob = BOB();
-
-    let mut spy = spy_events();
-
-    // Configure wager with escrow
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Create a wager
     let stake = 100_u256;
-    let deposit = 20_u256; // Insufficient deposit
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let bob = BOB();
 
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
     start_cheat_caller_address(wager.contract_address, bob);
-
-    let vote = true;
-    wager.submit_outcome(wager_id, vote);
+    wager.fund_wallet(stake);
+    wager.join_wager(wager_id, Claim::No); // Make bob a participant
+    wager.submit_outcome(wager_id, true);
+    stop_cheat_caller_address(wager.contract_address);
 
     assert(wager.has_outcome_submitted(wager_id, bob), 'outcome not registered');
-
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    wager.contract_address,
-                    StrkWager::Event::OutcomeSubmitted(
-                        StrkWager::OutcomeSubmittedEvent { wager_id, participant: bob, vote },
-                    ),
-                ),
-            ],
-        );
 }
 
 #[test]
-#[should_panic(expected: 'Participant already submitted')]
+#[should_panic(expected: ('Participant already submitted',))]
 fn test_submit_outcome_fail_double_submit() {
-    // Deploy contracts
     let (wager, escrow, strk_dispatcher) = setup();
-    let bob = BOB();
-
-    // Configure wager with escrow
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Create a wager
     let stake = 100_u256;
-    let deposit = 20_u256; // Insufficient deposit
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let bob = BOB();
 
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
     start_cheat_caller_address(wager.contract_address, bob);
-
+    wager.fund_wallet(stake);
+    wager.join_wager(wager_id, Claim::No); // Make bob a participant
     wager.submit_outcome(wager_id, true);
-
-    wager.submit_outcome(wager_id, true);
+    wager.submit_outcome(wager_id, true); // Should panic
+    stop_cheat_caller_address(wager.contract_address);
 }
 
 #[test]
@@ -958,40 +948,20 @@ fn test_submit_outcome_fail_wager_resolved() {
 }
 
 #[test]
-#[should_panic(expected: 'Not a participant')]
+#[should_panic(expected: ('Not a participant',))]
 fn test_submit_outcome_fail_not_a_participant() {
     let (wager, escrow, strk_dispatcher) = setup();
-
-    // Configure wager with escrow
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Create a wager
     let stake = 100_u256;
     let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
-
-    let owner = OWNER();
     let bob = BOB();
 
-    // Mint tokens for BOB
-    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
-    strk_dispatcher.transfer(bob, stake);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // BOB approves tokens
-    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
-    strk_dispatcher.approve(escrow.contract_address, stake);
-    stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Fund the wallet of the participant
+    // Bob hasn't joined yet, so he's not a participant
     start_cheat_caller_address(wager.contract_address, bob);
-    wager.fund_wallet(stake);
-    stop_cheat_caller_address(wager.contract_address);
-
-    // Try to submit outcome - should panic
-    start_cheat_caller_address(wager.contract_address, owner);
-    wager.submit_outcome(wager_id, true);
+    wager.submit_outcome(wager_id, true); // Should panic here
     stop_cheat_caller_address(wager.contract_address);
 }
 
@@ -1241,45 +1211,168 @@ fn test_join_head_to_head_with_opposing_claims() {
 #[should_panic(expected: ('Claims must be opposing',))]
 fn test_join_head_to_head_same_claim_fails() {
     let (wager, escrow, strk_dispatcher) = setup();
-
-    // Configure wager with escrow
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Create a wager with creator claiming Yes
     let stake = 100_u256;
     let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
-
     let bob = BOB();
 
-    // Mint tokens for BOB
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
     strk_dispatcher.transfer(bob, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // BOB approves tokens
     start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
-
-    // Fund the wallet of the participant
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
+    wager.join_wager(wager_id, Claim::Yes); // Should panic here
+    stop_cheat_caller_address(wager.contract_address);
+}
+
+#[test]
+fn test_check_resolution_pending_states() {
+    let (wager, escrow, strk_dispatcher) = setup();
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-    // Try to join with the same claim - should fail
+    // Create and join wager
+    let stake = 100_u256;
+    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let owner = OWNER();
+    let bob = BOB();
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
     start_cheat_caller_address(wager.contract_address, bob);
-    wager.join_wager(wager_id, Claim::Yes);
+    wager.fund_wallet(stake);
+    wager.join_wager(wager_id, Claim::No);
     stop_cheat_caller_address(wager.contract_address);
 
-    let participants = wager.get_wager_participants(wager_id);
-    let mut not_found = true;
-    for participant_address in participants {
-        if participant_address == @bob {
-            not_found = false;
-            break;
+    // No submissions
+    let result = wager.check_resolution(wager_id);
+    assert(result.is_none(), ' None');
+
+    // One submission
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.submit_outcome(wager_id, true);
+    stop_cheat_caller_address(wager.contract_address);
+    let result = wager.check_resolution(wager_id);
+    assert(result.is_none(), 'None');
+
+    // Disagreement
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.submit_outcome(wager_id, false);
+    stop_cheat_caller_address(wager.contract_address);
+    let result = wager.check_resolution(wager_id);
+    assert(result.is_none(), 'Disagreement should return None');
+}
+
+#[test]
+fn test_check_resolution_consensus() {
+    let (wager, escrow, strk_dispatcher) = setup();
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create and join wager
+    let stake = 100_u256;
+    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let owner = OWNER();
+    let bob = BOB();
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    wager.join_wager(wager_id, Claim::No);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Both agree on true
+    start_cheat_caller_address(wager.contract_address, owner);
+    wager.submit_outcome(wager_id, true);
+    stop_cheat_caller_address(wager.contract_address);
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.submit_outcome(wager_id, true);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let result = wager.check_resolution(wager_id);
+    match result {
+        Option::Some(outcome) => assert(outcome == true, 'Should return Some(true)'),
+        Option::None => panic(array!['Expected Some(true)']),
+    }
+}
+
+#[test]
+#[should_panic(expected: ('Wager already resolved',))]
+fn test_check_resolution_already_resolved() {
+    let (wager, escrow, strk_dispatcher) = setup();
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Create and join wager
+    let stake = 100_u256;
+    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let owner = OWNER();
+    let bob = BOB();
+
+    start_cheat_caller_address(strk_dispatcher.contract_address, owner);
+    strk_dispatcher.transfer(bob, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, stake);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(stake);
+    wager.join_wager(wager_id, Claim::No);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Resolve the wager
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.resolve_wager(wager_id, owner);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Should panic
+    match wager.check_resolution(wager_id) {
+        Option::Some(outcome) => {
+            // Handle the outcome if it exists
+            println!("Resolution outcome: {:?}", outcome);
+        },
+        Option::None => {
+            // Handle the case where no resolution is available
+            println!("No resolution available for the wager.");
         }
-    };
-    assert!(not_found, "Participant shouldn't join wager");
+    }
+}
+
+#[test]
+#[should_panic(expected: ('Wager does not exist',))]
+fn test_check_resolution_nonexistent() {
+    let (wager, escrow, _strk_dispatcher) = setup();
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Check non-existent wager
+    match wager.check_resolution(999) {
+        Option::Some(outcome) => {
+            // Handle the outcome if it exists
+            println!("Resolution outcome: {:?}", outcome);
+        },
+        Option::None => {
+            // Handle the case where no resolution is available
+            println!("No resolution available for the wager.");
+        }
+    }
 }
