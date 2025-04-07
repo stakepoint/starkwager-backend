@@ -4,7 +4,7 @@ use starknet::{testing, contract_address_const};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
-use contracts::tests::utils::{OWNER, BOB, deploy_escrow, setup};
+use contracts::tests::utils::{OWNER, BOB, deploy_escrow, setup, create_head_to_head_wager, ADMIN};
 
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address,};
 

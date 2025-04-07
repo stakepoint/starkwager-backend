@@ -857,10 +857,19 @@ fn test_submit_outcome_pass() {
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
     wager.join_wager(wager_id, Claim::No); // Make bob a participant
-    wager.submit_outcome(wager_id, true);
+    wager.submit_outcome(wager_id, false);
+    stop_cheat_caller_address(wager.contract_address);
+
+    start_cheat_caller_address(wager.contract_address, OWNER());
+    wager.submit_outcome(wager_id, false);
     stop_cheat_caller_address(wager.contract_address);
 
     assert(wager.has_outcome_submitted(wager_id, bob), 'outcome not registered');
+
+    let wager_s = wager.get_wager(wager_id);
+    assert(wager_s.state == WagerState::Resolved, 'wager not resolved');
+    assert(wager_s.winner == bob, 'winner not set');
+    assert(escrow.get_balance(bob) == stake * 2, 'balance not updated');
 }
 
 #[test]

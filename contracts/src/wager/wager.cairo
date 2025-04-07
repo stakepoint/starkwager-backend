@@ -308,6 +308,12 @@ pub mod StrkWager {
             ); // 1 because the wager by default has the creator as a participant
             wager.state = WagerState::Cancelled;
             self.wagers.entry(wager_id).write(wager);
+
+            // refund participants
+            let participants = self.get_wager_participants(wager_id);
+            let wager = self.wagers.entry(wager_id).read();
+            self._escrow_dispatcher().refund_wager(wager_id, wager.stake, participants);
+
             self.emit(WagerEventCancelled { wager_id });
         }
 
@@ -326,28 +332,28 @@ pub mod StrkWager {
         fn submit_outcome(ref self: ContractState, wager_id: u64, vote: bool) {
             let wager = self.get_wager(wager_id);
             let caller = get_caller_address();
-            
+
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
             assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
-            
+
             // Check if caller is a participant
             assert(self.is_wager_participant(wager_id, caller), 'Not a participant');
             assert(!self.has_outcome_submitted(wager_id, caller), 'Participant already submitted');
-            
+
             // Record vote
             self.wager_outcome_votes.entry((wager_id, caller)).write(vote);
             self.wager_outcome_submitted.entry((wager_id, caller)).write(true);
-            
+
             // Transition state to VotingPhase if currently Active
             if wager.state == WagerState::Active {
                 let mut wager_copy = wager.clone();
                 wager_copy.state = WagerState::VotingPhase;
                 self.wagers.entry(wager_id).write(wager_copy);
             }
-            
+
             self.emit(OutcomeSubmittedEvent { wager_id, participant: caller, vote });
-            
+
             // For head-to-head, check if we can resolve automatically
             let wager = self.get_wager(wager_id);
             if wager.mode == Mode::HeadToHead {
@@ -455,7 +461,8 @@ pub mod StrkWager {
 
                     self.wagers.entry(wager_id).write(updated_wager);
 
-                    //TODO Distribute funds through escrow
+                    // Distribute funds through escrow
+                    self._escrow_dispatcher().distribute_funds(wager_id, winner);
 
                     // Emit an event for resolution
                     self.emit(WagerResolvedEvent { wager_id, winner });
