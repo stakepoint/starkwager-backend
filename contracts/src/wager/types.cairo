@@ -1,6 +1,7 @@
 use starknet::ContractAddress;
 
-#[derive(Drop, Serde, starknet::Store)]
+// TODO Add timestamp tracking
+#[derive(Drop, Serde, starknet::Store, Clone)]
 pub struct Wager {
     pub wager_id: u64,
     pub category: Category,
@@ -35,7 +36,7 @@ pub enum Claim {
     Yes,
 }
 
-#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
+#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default, Debug)]
 pub enum WagerState {
     #[default]
     Pending,
