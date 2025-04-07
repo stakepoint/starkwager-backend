@@ -1,8 +1,8 @@
-use starknet::{ContractAddress, contract_address_const};
+use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 
 use contracts::wager::wager::StrkWager;
 use contracts::wager::types::{Category, Mode, Claim, WagerState};
-use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
+use contracts::wager::interface::{IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
 use contracts::tests::utils::{OWNER, ADMIN, ALICE, BOB, setup, create_head_to_head_wager};
 use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
@@ -11,7 +11,7 @@ use snforge_std::{
     EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address, spy_events,
 };
 
-
+/// Test that setting the escrow address fails when the caller is missing the admin role.
 #[test]
 #[should_panic(expected: 'Caller is missing role')]
 fn test_set_escrow_address_fail() {
@@ -100,7 +100,8 @@ fn test_create_head_to_head_wager_success_with_in_app_wallet_balance() {
     wager.set_escrow_address(escrow.contract_address);
     stop_cheat_caller_address(wager.contract_address);
 
-    create_head_to_head_wager(wager, escrow, strk_dispatcher, 3000, 2000);
+    let resolution_time = get_block_timestamp() + 100;
+    create_head_to_head_wager(wager, escrow, strk_dispatcher, 3000, 2000, resolution_time);
 }
 
 #[test]
@@ -113,7 +114,8 @@ fn test_create_head_to_head_wager_success_with_external_wallet_balance() {
     stop_cheat_caller_address(wager.contract_address);
     // user have less deposite than required for stake, but still has enough balance on his external
     // wallet
-    create_head_to_head_wager(wager, escrow, strk_dispatcher, 2000, 2200);
+    let resolution_time = get_block_timestamp() + 100;
+    create_head_to_head_wager(wager, escrow, strk_dispatcher, 2000, 2200, resolution_time);
 }
 
 #[test]
@@ -132,7 +134,8 @@ fn test_create_head_to_head_wager_insufficient_balance() {
         .transfer(contract_address_const::<'any-address'>(), strk_dispatcher.balance_of(OWNER()));
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    create_head_to_head_wager(wager, escrow, strk_dispatcher, 2000, 2200);
+    let resolution_time = get_block_timestamp() + 100;
+    create_head_to_head_wager(wager, escrow, strk_dispatcher, 2000, 2200, resolution_time);
 }
 
 #[test]
@@ -210,8 +213,10 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
 
     // Create a wager
     let stake = 100_u256;
-    let claim = Claim::No;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
 
     let owner = OWNER();
     let bob = BOB();
@@ -233,7 +238,7 @@ fn test_join_wager_success_with_in_app_wallet_balance() {
 
     // Join the wager
     start_cheat_caller_address(wager.contract_address, bob);
-    wager.join_wager(wager_id, claim);
+    wager.join_wager(wager_id, Claim::No);
     stop_cheat_caller_address(wager.contract_address);
 
     let participants = wager.get_wager_participants(wager_id);
@@ -273,7 +278,10 @@ fn test_join_wager_success_with_external_wallet_balance() {
     // Create a wager
     let stake = 100_u256;
     let deposit = stake - 10;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     let owner = OWNER();
     let bob = BOB();
@@ -343,7 +351,10 @@ fn test_join_wager_insufficient_balance() {
     // Create a wager
     let stake = 100_u256;
     let deposit = 20_u256; // Insufficient deposit
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     // Mint tokens for BOB (not enough)
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
@@ -378,7 +389,10 @@ fn test_join_wager_resolved() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
 
     // Resolve the wager
     let owner = OWNER();
@@ -404,7 +418,10 @@ fn test_resolve_wager() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
 
     start_cheat_caller_address(wager.contract_address, ADMIN());
     wager.resolve_wager(wager_id, owner);
@@ -428,7 +445,10 @@ fn test_resolve_wager_already_resolved() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
 
     // Resolve the wager
     let owner = OWNER();
@@ -451,7 +471,10 @@ fn test_get_wager_ok() {
     // Create a wager
     let stake = 1000_u256;
     let deposit = 2000_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     let retrieved_wager = wager.get_wager(wager_id);
 
@@ -502,38 +525,54 @@ fn test_join_wager_head_to_head_full() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
 
     let bob = BOB();
     let claim = Claim::No;
-    // Mint tokens for BOB and approve
+
+    // Mint tokens for BOB
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
     strk_dispatcher.transfer(bob, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // BOB approves tokens and funds wallet
+    // BOB approves tokens
     start_cheat_caller_address(strk_dispatcher.contract_address, bob);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
+    // Fund the wallet of the participant
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
     wager.join_wager(wager_id, claim);
     stop_cheat_caller_address(wager.contract_address);
 
     // Try to join with a third participant - should fail
     let alice = ALICE();
+
+    // Mint tokens for ALICE
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
     strk_dispatcher.transfer(alice, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
-    // Alice approves tokens and funds wallet
+    // ALICE approves tokens
     start_cheat_caller_address(strk_dispatcher.contract_address, alice);
     strk_dispatcher.approve(escrow.contract_address, stake);
     stop_cheat_caller_address(strk_dispatcher.contract_address);
 
+    // Fund the wallet of the participant
     start_cheat_caller_address(wager.contract_address, alice);
     wager.fund_wallet(stake);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, alice);
     wager.join_wager(wager_id, claim); // Should panic here
     stop_cheat_caller_address(wager.contract_address);
 }
@@ -549,7 +588,10 @@ fn test_is_wager_participant() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
     let claim = Claim::No;
 
     let owner = OWNER();
@@ -591,7 +633,10 @@ fn test_join_wager_with_claim() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
     let claim = Claim::No;
 
     let owner = OWNER();
@@ -630,7 +675,10 @@ fn test_create_head_to_head_wager_with_claim() {
 
     // Create a wager
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
     let claim = Claim::Yes;
 
     let owner = OWNER();
@@ -652,7 +700,10 @@ fn test_fund_wager_for_create_and_join_wager() {
     // Create a wager
     start_cheat_caller_address(wager.contract_address, OWNER());
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
 
     assert(escrow.get_wager_stake(wager_id) == stake, 'wrong total stake');
     stop_cheat_caller_address(wager.contract_address);
@@ -694,8 +745,10 @@ fn test_join_wager_if_already_a_participant() {
 
     // Create a wager
     let stake = 100_u256;
-    let claim = Claim::Yes;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
 
     let owner = OWNER();
     let bob = BOB();
@@ -717,8 +770,8 @@ fn test_join_wager_if_already_a_participant() {
 
     // Join the wager
     start_cheat_caller_address(wager.contract_address, owner);
-    wager.join_wager(wager_id, claim);
-    wager.join_wager(wager_id, claim);
+    wager.join_wager(wager_id, Claim::No);
+    wager.join_wager(wager_id, Claim::No);
     stop_cheat_caller_address(wager.contract_address);
 }
 
@@ -735,7 +788,10 @@ fn test_wager_state_transitions() {
     // 1. Create a wager and verify Pending state
     let stake = 1000_u256;
     let deposit = 2000_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     let created_wager = wager.get_wager(wager_id);
     assert!(
@@ -793,7 +849,10 @@ fn test_cannot_join_resolved_wager() {
     // 1. Create a wager
     let stake = 1000_u256;
     let deposit = 2000_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     // 2. Have BOB join the wager
     let participant = BOB();
@@ -845,7 +904,10 @@ fn test_submit_outcome_pass() {
     stop_cheat_caller_address(wager.contract_address);
 
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
     let bob = BOB();
 
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
@@ -881,7 +943,10 @@ fn test_submit_outcome_fail_double_submit() {
     stop_cheat_caller_address(wager.contract_address);
 
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
     let bob = BOB();
 
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
@@ -894,12 +959,12 @@ fn test_submit_outcome_fail_double_submit() {
     wager.fund_wallet(stake);
     wager.join_wager(wager_id, Claim::No); // Make bob a participant
     wager.submit_outcome(wager_id, true);
-    wager.submit_outcome(wager_id, true); // Should panic
+    wager.submit_outcome(wager_id, true); // Should panic here
     stop_cheat_caller_address(wager.contract_address);
 }
 
 #[test]
-#[should_panic(expected: 'Wager is already resolved')]
+#[should_panic(expected: ('Wager is already resolved',))]
 fn test_submit_outcome_fail_wager_resolved() {
     // Set up the test environment
     let (wager, escrow, strk_dispatcher) = setup();
@@ -912,7 +977,10 @@ fn test_submit_outcome_fail_wager_resolved() {
     // 1. Create a wager
     let stake = 1000_u256;
     let deposit = 2000_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     // 2. Have BOB join the wager
     let participant = BOB();
@@ -965,7 +1033,10 @@ fn test_submit_outcome_fail_not_a_participant() {
     stop_cheat_caller_address(wager.contract_address);
 
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
     let bob = BOB();
 
     // Bob hasn't joined yet, so he's not a participant
@@ -993,7 +1064,10 @@ fn test_cancel_wager() {
 
     let stake = 1000_u256;
     let deposit = 2000_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     let created_wager = wager.get_wager(wager_id);
     assert!(
@@ -1029,7 +1103,10 @@ fn test_cancel_wager_should_panic_if_wager_cancelled() {
 
     let stake = 1000_u256;
     let deposit = 2000_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     wager.cancel_wager(wager_id);
     wager.cancel_wager(wager_id);
@@ -1047,8 +1124,10 @@ fn test_cancel_wager_should_panic_if_wager_is_not_empty() {
 
     // Create a wager
     let stake = 100_u256;
-    let claim = Claim::No;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
 
     let owner = OWNER();
     let bob = BOB();
@@ -1070,7 +1149,7 @@ fn test_cancel_wager_should_panic_if_wager_is_not_empty() {
 
     // Join the wager
     start_cheat_caller_address(wager.contract_address, bob);
-    wager.join_wager(wager_id, claim);
+    wager.join_wager(wager_id, Claim::No);
     stop_cheat_caller_address(wager.contract_address);
 
     let participants = wager.get_wager_participants(wager_id);
@@ -1096,9 +1175,12 @@ fn test_join_head_to_head_with_opposing_claims() {
 
     // Create a wager with creator claiming Yes
     let stake = 100_u256;
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
     let claim_pos = Claim::Yes;
     let claim_neg = Claim::No;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
 
     let owner = OWNER();
     let bob = BOB();
@@ -1161,7 +1243,10 @@ fn test_join_head_to_head_same_claim_fails() {
     stop_cheat_caller_address(wager.contract_address);
 
     let stake = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, stake, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, stake, stake, resolution_time
+    );
     let bob = BOB();
 
     start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());

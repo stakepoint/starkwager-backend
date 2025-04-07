@@ -172,7 +172,7 @@ pub mod StrkWager {
             let state = WagerState::Pending;
             let created_at = get_block_timestamp();
 
-            assert!(resolution_time > created_at, "Resolution time must be in the future");
+            assert!(resolution_time > created_at, "Resolution time not in future");
 
             let new_wager = Wager {
                 wager_id,
@@ -230,10 +230,6 @@ pub mod StrkWager {
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
             assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
-
-            assert(
-                self._is_resolution_time_reached(wager_id), 'Resolution time not reached'
-            ); // Add this check
 
             assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
 

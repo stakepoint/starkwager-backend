@@ -1,4 +1,4 @@
-use starknet::{ContractAddress, contract_address_const};
+use starknet::{ContractAddress, get_block_timestamp};
 
 use contracts::wager::wager::StrkWager;
 use contracts::wager::types::{Category, Mode, Claim, WagerState};
@@ -40,7 +40,10 @@ fn test_distribute_funds_ok() {
 
     let stake = 100_u256;
     let deposit = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     let john: ContractAddress = 'john'.try_into().unwrap();
 
@@ -73,7 +76,10 @@ fn test_refund_wager_refund_mismatch() {
 
     let stake = 100_u256;
     let deposit = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     let john: ContractAddress = 'john'.try_into().unwrap();
 
@@ -92,7 +98,10 @@ fn test_refund_wager_ok() {
 
     let stake = 100_u256;
     let deposit = 100_u256;
-    let wager_id = create_head_to_head_wager(wager, escrow, strk_dispatcher, deposit, stake);
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
 
     let john: ContractAddress = 'john'.try_into().unwrap();
 
