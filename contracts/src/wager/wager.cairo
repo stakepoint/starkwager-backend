@@ -106,6 +106,9 @@ pub mod StrkWager {
     pub struct WagerResolvedEvent {
         pub wager_id: u64,
         pub winner: ContractAddress,
+        //     pub final_outcome: Claim, //TODO
+    // pub consensus_reached: bool,
+    // pub resolved_at: u64,
     }
 
     const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE"); // Unique identifier for the role
@@ -305,6 +308,12 @@ pub mod StrkWager {
             ); // 1 because the wager by default has the creator as a participant
             wager.state = WagerState::Cancelled;
             self.wagers.entry(wager_id).write(wager);
+
+            // refund participants
+            let participants = self.get_wager_participants(wager_id);
+            let wager = self.wagers.entry(wager_id).read();
+            self._escrow_dispatcher().refund_wager(wager_id, wager.stake, participants);
+
             self.emit(WagerEventCancelled { wager_id });
         }
 
@@ -326,113 +335,40 @@ pub mod StrkWager {
 
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
+            assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
 
             // Check if caller is a participant
             assert(self.is_wager_participant(wager_id, caller), 'Not a participant');
-
             assert(!self.has_outcome_submitted(wager_id, caller), 'Participant already submitted');
 
+            // Record vote
             self.wager_outcome_votes.entry((wager_id, caller)).write(vote);
             self.wager_outcome_submitted.entry((wager_id, caller)).write(true);
 
-            self.emit(OutcomeSubmittedEvent { wager_id, participant: caller, vote });
-        }
-
-        fn resolve_wager_based_on_outcome(
-            ref self: ContractState, wager_id: u64, final_outcome: Claim,
-        ) {
-            let mut wager = self.wagers.entry(wager_id).read();
-
-            assert(wager.state != WagerState::Resolved, 'wager_is_already_resolved');
-
-            match wager.mode {
-                Mode::HeadToHead => {
-                    let participant_count = self.wager_participants_count.entry(wager_id).read();
-                    assert(participant_count > 0, 'wager_have_no_participants');
-
-                    let mut winner = contract_address_const::<0>();
-                    let mut i = 1;
-
-                    while i <= participant_count {
-                        let participant = self.wager_participants.entry(wager_id).entry(i).read();
-                        let claim = self
-                            .wager_participants_claim
-                            .entry(wager_id)
-                            .entry(participant)
-                            .read();
-
-                        if claim == final_outcome {
-                            winner = participant;
-                            break;
-                        }
-                        i += 1;
-                    };
-
-                    assert(!winner.is_zero(), 'no_matching_claim');
-                    let updated_wager = Wager { state: WagerState::Resolved, winner, ..wager };
-
-                    self.wagers.entry(wager_id).write(updated_wager);
-
-                    // Emit an event for resolution
-                    self.emit(WagerResolvedEvent { wager_id, winner });
-                },
-                Mode::Group => { assert(false, 'not_group_allow'); },
+            // Transition state to VotingPhase if currently Active
+            if wager.state == WagerState::Active {
+                let mut wager_copy = wager.clone();
+                wager_copy.state = WagerState::VotingPhase;
+                self.wagers.entry(wager_id).write(wager_copy);
             }
-        }
 
-        fn check_resolution(self: @ContractState, wager_id: u64) -> Option<bool> {
-            // Get the wager
-            let wager = self.wagers.entry(wager_id).read();
+            self.emit(OutcomeSubmittedEvent { wager_id, participant: caller, vote });
 
-            // Verify wager exists
-            assert(!wager.creator.is_zero(), 'Wager does not exist');
-
-            // Verify wager hasn't been resolved
-            assert(wager.state != WagerState::Resolved, 'Wager already resolved');
-            assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
-
-            // Handle based on wager mode
-            match wager.mode {
-                Mode::HeadToHead => {
-                    // Check participant count (should be 2 for head-to-head)
-                    let participant_count = self.wager_participants_count.entry(wager_id).read();
-                    if participant_count != 2 {
-                        return Option::None; // Not enough participants yet
-                    }
-
-                    // Get both participants
-                    let participant1 = self.wager_participants.entry(wager_id).entry(1).read();
-                    let participant2 = self.wager_participants.entry(wager_id).entry(2).read();
-
-                    // Check if both have submitted outcomes
-                    let submitted1 = self
-                        .wager_outcome_submitted
-                        .entry((wager_id, participant1))
-                        .read();
-                    let submitted2 = self
-                        .wager_outcome_submitted
-                        .entry((wager_id, participant2))
-                        .read();
-
-                    if !submitted1 || !submitted2 {
-                        return Option::None; // Not all outcomes submitted
-                    }
-
-                    // Get the submitted outcomes
-                    let vote1 = self.wager_outcome_votes.entry((wager_id, participant1)).read();
-                    let vote2 = self.wager_outcome_votes.entry((wager_id, participant2)).read();
-
-                    // Check if they agree
-                    if vote1 == vote2 {
-                        Option::Some(vote1) // Consensus reached, return the outcome
-                    } else {
-                        Option::None // No consensus
-                    }
-                },
-                Mode::Group => {
-                    // For now, return None as group mode resolution isn't specified
-                    // Could be extended later with different consensus rules
-                    Option::None
+            // For head-to-head, check if we can resolve automatically
+            let wager = self.get_wager(wager_id);
+            if wager.mode == Mode::HeadToHead {
+                let resolution = self._check_resolution(wager_id);
+                match resolution {
+                    Option::Some(outcome) => {
+                        // Convert boolean outcome to claim type
+                        let final_outcome = if outcome {
+                            Claim::Yes
+                        } else {
+                            Claim::No
+                        };
+                        self._resolve_wager_based_on_outcome(wager_id, final_outcome);
+                    },
+                    Option::None => {}
                 }
             }
         }
@@ -487,6 +423,109 @@ pub mod StrkWager {
             self: @ContractState, wager_id: u64, participant: ContractAddress,
         ) -> Claim {
             self.wager_participants_claim.entry(wager_id).entry(participant).read()
+        }
+
+        fn _resolve_wager_based_on_outcome(
+            ref self: ContractState, wager_id: u64, final_outcome: Claim,
+        ) {
+            let mut wager = self.wagers.entry(wager_id).read();
+
+            assert(wager.state != WagerState::Resolved, 'wager_is_already_resolved');
+            assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
+
+            match wager.mode {
+                Mode::HeadToHead => {
+                    let participant_count = self.wager_participants_count.entry(wager_id).read();
+                    assert(participant_count > 0, 'No participants');
+
+                    let mut winner = contract_address_const::<0>();
+                    let mut i = 1;
+
+                    while i <= participant_count {
+                        let participant = self.wager_participants.entry(wager_id).entry(i).read();
+                        let claim = self
+                            .wager_participants_claim
+                            .entry(wager_id)
+                            .entry(participant)
+                            .read();
+
+                        if claim == final_outcome {
+                            winner = participant;
+                            break;
+                        }
+                        i += 1;
+                    };
+
+                    assert(!winner.is_zero(), 'no_matching_claim');
+                    let updated_wager = Wager { state: WagerState::Resolved, winner, ..wager };
+
+                    self.wagers.entry(wager_id).write(updated_wager);
+
+                    // Distribute funds through escrow
+                    self._escrow_dispatcher().distribute_funds(wager_id, winner);
+
+                    // Emit an event for resolution
+                    self.emit(WagerResolvedEvent { wager_id, winner });
+                },
+                Mode::Group => { assert(false, 'not_group_allow'); },
+            }
+        }
+
+        fn _check_resolution(self: @ContractState, wager_id: u64) -> Option<bool> {
+            // Get the wager
+            let wager = self.wagers.entry(wager_id).read();
+
+            // Verify wager exists
+            assert(!wager.creator.is_zero(), 'Wager does not exist');
+
+            // Verify wager hasn't been resolved
+            assert(wager.state != WagerState::Resolved, 'Wager already resolved');
+            assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
+
+            // Handle based on wager mode
+            match wager.mode {
+                Mode::HeadToHead => {
+                    // Check participant count (should be 2 for head-to-head)
+                    let participant_count = self.wager_participants_count.entry(wager_id).read();
+                    if participant_count != 2 {
+                        return Option::None; // Not enough participants yet
+                    }
+
+                    // Get both participants
+                    let participant1 = self.wager_participants.entry(wager_id).entry(1).read();
+                    let participant2 = self.wager_participants.entry(wager_id).entry(2).read();
+
+                    // Check if both have submitted outcomes
+                    let submitted1 = self
+                        .wager_outcome_submitted
+                        .entry((wager_id, participant1))
+                        .read();
+                    let submitted2 = self
+                        .wager_outcome_submitted
+                        .entry((wager_id, participant2))
+                        .read();
+
+                    if !submitted1 || !submitted2 {
+                        return Option::None; // Not all outcomes submitted
+                    }
+
+                    // Get the submitted outcomes
+                    let vote1 = self.wager_outcome_votes.entry((wager_id, participant1)).read();
+                    let vote2 = self.wager_outcome_votes.entry((wager_id, participant2)).read();
+
+                    // Check if they agree
+                    if vote1 == vote2 {
+                        Option::Some(vote1) // Consensus reached, return the outcome
+                    } else {
+                        Option::None // No consensus
+                    }
+                },
+                Mode::Group => {
+                    // For now, return None as group mode resolution isn't specified
+                    // Could be extended later with different consensus rules
+                    Option::None
+                }
+            }
         }
     }
 }

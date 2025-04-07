@@ -8,4 +8,5 @@ mod tests {
     mod test_escrow;
     mod test_wager;
     mod utils;
+    mod test_integration;
 }

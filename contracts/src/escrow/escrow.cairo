@@ -48,6 +48,8 @@ pub mod Escrow {
     enum Event {
         Deposit: DepositEvent,
         Withdraw: WithdrawEvent,
+        FundsDistributedEvent: FundsDistributedEvent,
+        FundsRefundedEvent: FundsRefundedEvent,
         #[flat]
         OwnableEvent: OwnableComponent::Event,
         #[flat]
@@ -66,6 +68,20 @@ pub mod Escrow {
     pub struct WithdrawEvent {
         to: ContractAddress,
         amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct FundsDistributedEvent {
+        pub wager_id: u64,
+        pub winner: ContractAddress,
+        pub amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct FundsRefundedEvent {
+        pub wager_id: u64,
+        pub participant: ContractAddress,
+        pub amount: u256,
     }
 
 
@@ -143,6 +159,65 @@ pub mod Escrow {
 
         fn get_wager_stake(self: @ContractState, wager_id: u64) -> u256 {
             self.wager_stake.entry(wager_id).read()
+        }
+
+        fn distribute_funds(ref self: ContractState, wager_id: u64, winner: ContractAddress) {
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
+
+            // Validate inputs
+            assert(!winner.is_zero(), 'Invalid winner address');
+
+            // Get the total stake for this wager
+            let total_stake = self.wager_stake.entry(wager_id).read();
+            assert(total_stake > 0, 'No funds in wager');
+
+            // Clear the wager stake first to prevent reentrancy
+            self.wager_stake.entry(wager_id).write(0);
+
+            // Update winner's balance
+            let winner_balance = self.get_balance(winner);
+            self.user_balance.entry(winner).write(winner_balance + total_stake);
+
+            // Emit event for the distribution
+            self.emit(FundsDistributedEvent { wager_id, winner, amount: total_stake });
+        }
+
+        fn refund_wager(
+            ref self: ContractState, wager_id: u64, stake: u256, participants: Span<ContractAddress>
+        ) {
+            self.accesscontrol.assert_only_role(WAGER_ROLE);
+
+            // Get the total stake for this wager
+            let total_stake = self.wager_stake.entry(wager_id).read();
+            assert(total_stake > 0, 'No funds in wager');
+
+            // Clear the wager stake first to prevent reentrancy
+            self.wager_stake.entry(wager_id).write(0);
+
+            // Refund each participant their stake
+            let mut refunded_amount: u256 = 0;
+            let mut i = 0;
+            let participants_len = participants.len();
+
+            while i < participants_len {
+                let participant = *participants.at(i);
+                assert(!participant.is_zero(), 'Invalid participant');
+
+                // Update participant's balance
+                let participant_balance = self.get_balance(participant);
+                self.user_balance.entry(participant).write(participant_balance + stake);
+
+                // Track refunded amount
+                refunded_amount += stake;
+
+                // Emit event for each refund
+                self.emit(FundsRefundedEvent { wager_id, participant, amount: stake });
+
+                i += 1;
+            };
+
+            // Ensure all funds are accounted for
+            assert(refunded_amount == total_stake, 'Refund amount mismatch');
         }
     }
 }
