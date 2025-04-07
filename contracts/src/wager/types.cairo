@@ -12,6 +12,8 @@ pub struct Wager {
     pub winner: ContractAddress,
     pub mode: Mode,
     pub state: WagerState,
+    pub resolution_time: u64,
+    pub created_at: u64,
 }
 
 #[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]

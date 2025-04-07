@@ -14,7 +14,8 @@ pub trait IStrkWager<TContractState> {
         terms: ByteArray,
         stake: u256,
         mode: Mode,
-        claim: Claim
+        claim: Claim,
+        resolution_time: u64,
     ) -> u64;
     fn join_wager(ref self: TContractState, wager_id: u64, claim: Claim);
     fn get_wager(self: @TContractState, wager_id: u64) -> Wager;
