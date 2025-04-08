@@ -1282,3 +1282,71 @@ fn test_join_head_to_head_same_claim_fails() {
     wager.join_wager(wager_id, Claim::Yes); // Should panic here
     stop_cheat_caller_address(wager.contract_address);
 }
+
+#[test]
+#[should_panic(expected: ('Resolution time not in future',))]
+fn test_create_wager_resolution_time_equals_created_at() {
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    let stake = 1000_u256;
+    let deposit = 2000_u256;
+    let resolution_time = get_block_timestamp();
+
+    // Attempt to create wager with resolution time equal to current time (should fail)
+    let _wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
+}
+
+#[test]
+#[should_panic(expected: ('Resolution time not reached',))]
+fn test_submit_outcome_before_resolution_time() {
+    // Set up the test environment
+    let (wager, escrow, strk_dispatcher) = setup();
+
+    // Configure wager with escrow
+    start_cheat_caller_address(wager.contract_address, ADMIN());
+    wager.set_escrow_address(escrow.contract_address);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // 1. Create a wager
+    let stake = 1000_u256;
+    let deposit = 2000_u256;
+    let resolution_time = get_block_timestamp() + 100;
+    let wager_id = create_head_to_head_wager(
+        wager, escrow, strk_dispatcher, deposit, stake, resolution_time
+    );
+
+    let owner = OWNER();
+    let bob = BOB();
+
+    // Mint tokens for BOB
+    start_cheat_caller_address(strk_dispatcher.contract_address, OWNER());
+    strk_dispatcher.transfer(bob, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // BOB approves tokens
+    start_cheat_caller_address(strk_dispatcher.contract_address, bob);
+    strk_dispatcher.approve(escrow.contract_address, deposit);
+    stop_cheat_caller_address(strk_dispatcher.contract_address);
+
+    // Fund the wallet of the participant
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.fund_wallet(deposit);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // Join the wager
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.join_wager(wager_id, Claim::No);
+    stop_cheat_caller_address(wager.contract_address);
+
+    // 2. Attempt to submit outcome before resolution time (should fail)
+    start_cheat_caller_address(wager.contract_address, bob);
+    wager.submit_outcome(wager_id, true);
+    stop_cheat_caller_address(wager.contract_address);
+}

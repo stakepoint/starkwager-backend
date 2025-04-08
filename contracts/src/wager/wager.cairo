@@ -172,7 +172,7 @@ pub mod StrkWager {
             let state = WagerState::Pending;
             let created_at = get_block_timestamp();
 
-            assert!(resolution_time > created_at, "Resolution time not in future");
+            assert(resolution_time > created_at, 'Resolution time not in future');
 
             let new_wager = Wager {
                 wager_id,
