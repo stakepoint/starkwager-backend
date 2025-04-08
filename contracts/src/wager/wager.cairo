@@ -9,6 +9,8 @@ pub mod StrkWager {
 
     use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
 
+    use starknet::get_block_timestamp;
+
     use contracts::wager::interface::IStrkWager;
     use contracts::wager::types::{Wager, Category, Mode, Claim, WagerState};
     use openzeppelin::introspection::src5::SRC5Component;
@@ -82,6 +84,8 @@ pub mod StrkWager {
         pub stake: u256,
         pub mode: Mode,
         pub state: WagerState,
+        pub resolution_time: u64,
+        pub created_at: u64,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -159,12 +163,17 @@ pub mod StrkWager {
             stake: u256,
             mode: Mode,
             claim: Claim,
+            resolution_time: u64,
         ) -> u64 {
             assert(self._has_sufficient_balance(stake), 'Insufficient balance');
 
             let creator = get_caller_address();
             let wager_id = self.wager_count.read() + 1;
             let state = WagerState::Pending;
+            let created_at = get_block_timestamp();
+
+            assert(resolution_time > created_at, 'Resolution time not in future');
+
             let new_wager = Wager {
                 wager_id,
                 category,
@@ -175,6 +184,8 @@ pub mod StrkWager {
                 winner: contract_address_const::<0>(),
                 mode,
                 state,
+                resolution_time,
+                created_at,
             };
 
             self.wagers.entry(wager_id).write(new_wager);
@@ -196,7 +207,16 @@ pub mod StrkWager {
             self
                 .emit(
                     WagerCreatedEvent {
-                        wager_id, category, title, terms, creator, stake, mode, state
+                        wager_id,
+                        category,
+                        title,
+                        terms,
+                        creator,
+                        stake,
+                        mode,
+                        state,
+                        resolution_time,
+                        created_at,
                     }
                 );
 
@@ -210,6 +230,7 @@ pub mod StrkWager {
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
             assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
+
             assert(!self.is_wager_participant(wager_id, caller), 'Already a participant');
 
             if wager.mode == Mode::HeadToHead {
@@ -336,6 +357,8 @@ pub mod StrkWager {
             assert(!wager.creator.is_zero(), 'Wager does not exist');
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
             assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
+
+            assert(self._is_resolution_time_reached(wager_id), 'Resolution time not reached');
 
             // Check if caller is a participant
             assert(self.is_wager_participant(wager_id, caller), 'Not a participant');
@@ -526,6 +549,12 @@ pub mod StrkWager {
                     Option::None
                 }
             }
+        }
+
+        fn _is_resolution_time_reached(self: @ContractState, wager_id: u64) -> bool {
+            let wager = self.get_wager(wager_id);
+            let current_time = get_block_timestamp();
+            current_time >= wager.resolution_time
         }
     }
 }

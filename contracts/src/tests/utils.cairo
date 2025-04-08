@@ -1,4 +1,5 @@
-use starknet::ContractAddress;
+use starknet::{ContractAddress, get_block_timestamp};
+
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 use snforge_std::{
@@ -85,7 +86,8 @@ pub fn create_head_to_head_wager(
     escrow: IEscrowDispatcher,
     strk_dispatcher: IERC20Dispatcher,
     deposit: u256,
-    stake: u256
+    stake: u256,
+    resolution_time: u64,
 ) -> u64 {
     let creator = OWNER();
     let mut spy = spy_events();
@@ -107,8 +109,12 @@ pub fn create_head_to_head_wager(
     let claim = Claim::Yes;
     let state = WagerState::Pending;
 
+    // Get timestamp just before creation for event assertion
+    let expected_created_at = get_block_timestamp();
+
     cheat_caller_address(wager.contract_address, creator, CheatSpan::TargetCalls(1));
-    let wager_id = wager.create_wager(category, title.clone(), terms.clone(), stake, mode, claim);
+    let wager_id = wager
+        .create_wager(category, title.clone(), terms.clone(), stake, mode, claim, resolution_time);
     stop_cheat_caller_address(wager.contract_address);
 
     spy
@@ -118,7 +124,16 @@ pub fn create_head_to_head_wager(
                     wager.contract_address,
                     StrkWager::Event::WagerCreated(
                         StrkWager::WagerCreatedEvent {
-                            wager_id, category, title, terms, creator, stake, mode, state
+                            wager_id,
+                            category,
+                            title,
+                            terms,
+                            creator,
+                            stake,
+                            mode,
+                            state,
+                            resolution_time,
+                            created_at: expected_created_at
                         }
                     )
                 )
