@@ -358,6 +358,8 @@ pub mod StrkWager {
             assert(wager.state != WagerState::Resolved, 'Wager is already resolved');
             assert(wager.state != WagerState::Cancelled, 'Wager is cancelled');
 
+            assert(self._is_resolution_time_reached(wager_id), 'Resolution time not reached');
+
             // Check if caller is a participant
             assert(self.is_wager_participant(wager_id, caller), 'Not a participant');
             assert(!self.has_outcome_submitted(wager_id, caller), 'Participant already submitted');

@@ -9,6 +9,7 @@ use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
 
 use snforge_std::{
     EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address, spy_events,
+    start_cheat_block_timestamp, stop_cheat_block_timestamp
 };
 
 /// Test that setting the escrow address fails when the caller is missing the admin role.
@@ -918,13 +919,18 @@ fn test_submit_outcome_pass() {
     stop_cheat_caller_address(strk_dispatcher.contract_address);
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
-    wager.join_wager(wager_id, Claim::No); // Make bob a participant
+    wager.join_wager(wager_id, Claim::No);
+
+    start_cheat_block_timestamp(wager.contract_address, resolution_time + 1);
+
     wager.submit_outcome(wager_id, false);
     stop_cheat_caller_address(wager.contract_address);
 
     start_cheat_caller_address(wager.contract_address, OWNER());
     wager.submit_outcome(wager_id, false);
     stop_cheat_caller_address(wager.contract_address);
+
+    stop_cheat_block_timestamp(wager.contract_address);
 
     assert(wager.has_outcome_submitted(wager_id, bob), 'outcome not registered');
 
@@ -933,6 +939,7 @@ fn test_submit_outcome_pass() {
     assert(wager_s.winner == bob, 'winner not set');
     assert(escrow.get_balance(bob) == stake * 2, 'balance not updated');
 }
+
 
 #[test]
 #[should_panic(expected: ('Participant already submitted',))]
@@ -958,8 +965,16 @@ fn test_submit_outcome_fail_double_submit() {
     start_cheat_caller_address(wager.contract_address, bob);
     wager.fund_wallet(stake);
     wager.join_wager(wager_id, Claim::No); // Make bob a participant
+
+    // Advance block timestamp beyond resolution time
+    start_cheat_block_timestamp(wager.contract_address, resolution_time + 1);
+
     wager.submit_outcome(wager_id, true);
     wager.submit_outcome(wager_id, true); // Should panic here
+
+    // Stop time cheating
+    stop_cheat_block_timestamp(wager.contract_address);
+
     stop_cheat_caller_address(wager.contract_address);
 }
 
@@ -1039,9 +1054,16 @@ fn test_submit_outcome_fail_not_a_participant() {
     );
     let bob = BOB();
 
+    // Advance block timestamp beyond resolution time
+    start_cheat_block_timestamp(wager.contract_address, resolution_time + 1);
+
     // Bob hasn't joined yet, so he's not a participant
     start_cheat_caller_address(wager.contract_address, bob);
     wager.submit_outcome(wager_id, true); // Should panic here
+
+    // Stop time cheating
+    stop_cheat_block_timestamp(wager.contract_address);
+
     stop_cheat_caller_address(wager.contract_address);
 }
 
