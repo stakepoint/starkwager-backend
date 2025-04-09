@@ -24,7 +24,7 @@ export class NotificationService {
     isRead?: boolean,
     page?: number,
     limit?: number,
-  ): Promise<{ data: Notification[]; total: number }> {
+  ): Promise<{ data: Partial<Notification>[]; total: number }> {
     const skip = page && limit ? (page - 1) * limit : undefined;
 
     const query = {
@@ -42,7 +42,7 @@ export class NotificationService {
 
     const notifications = await this.prisma.notification.findMany(query);
 
-    return { data: notifications, total };
+    return { data: notifications as Partial<Notification>[], total };
   }
 
   async markAsRead(id: string) {
