@@ -1,5 +1,6 @@
 # Env Config
 .env
+.env.production
 
 # Others
 package-lock.json
