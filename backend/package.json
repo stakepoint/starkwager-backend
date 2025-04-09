@@ -32,7 +32,8 @@
     "docker:prod": "docker-compose -f docker-compose.prod.yml up --build",
     "docker:down:dev": "docker-compose -f docker-compose.dev.yml down --remove-orphans",
     "docker:down:prod": "docker-compose -f docker-compose.prod.yml down --remove-orphans",
-    "docker:down:all": "docker-compose -f docker-compose.dev.yml -f docker-compose.prod.yml down --remove-orphans"
+    "docker:down:all": "docker-compose -f docker-compose.dev.yml -f docker-compose.prod.yml down --remove-orphans",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@nestjs/bull": "^11.0.2",
