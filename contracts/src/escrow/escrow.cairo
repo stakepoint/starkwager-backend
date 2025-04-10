@@ -32,7 +32,7 @@ pub mod Escrow {
 
     #[storage]
     struct Storage {
-        strk_dispatcher: IERC20Dispatcher,
+        strk_address: ContractAddress,
         user_balance: Map::<ContractAddress, u256>,
         wager_stake: Map::<u64, u256>, // wager_id -> total stake
         #[substorage(v0)]
@@ -89,9 +89,9 @@ pub mod Escrow {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, strk_dispatcher: IERC20Dispatcher, wager_contract: ContractAddress
+        ref self: ContractState, strk_address: ContractAddress, wager_contract: ContractAddress
     ) {
-        self.strk_dispatcher.write(strk_dispatcher);
+        self.strk_address.write(strk_address);
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(WAGER_ROLE, wager_contract);
     }
@@ -101,11 +101,11 @@ pub mod Escrow {
         fn deposit_to_wallet(ref self: ContractState, from: ContractAddress, amount: u256) {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
 
+            let strk_dispatcher = IERC20Dispatcher { contract_address: self.strk_address.read() };
+
             // Validate input
             assert(!from.is_zero(), 'Invalid address');
             assert(amount > 0, 'Amount must be positive');
-
-            let strk_dispatcher = self.strk_dispatcher.read();
 
             // transfers funds to escrow
             assert(strk_dispatcher.balance_of(from) >= amount, 'Insufficient balance');
@@ -116,7 +116,7 @@ pub mod Escrow {
 
         fn withdraw_from_wallet(ref self: ContractState, to: ContractAddress, amount: u256) {
             self.accesscontrol.assert_only_role(WAGER_ROLE);
-            let strk_dispatcher = self.strk_dispatcher.read();
+            let strk_dispatcher = IERC20Dispatcher { contract_address: self.strk_address.read() };
 
             // Validate recipient address
             assert(!to.is_zero(), 'Invalid address');
