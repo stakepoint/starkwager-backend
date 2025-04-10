@@ -12,6 +12,7 @@
     "start:dev": "npx prisma generate && npm run migrate:deploy && nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "start:render": "pnpm run prisma:generate && pnpm run migrate:deploy && pnpm run start:prod",
     "prisma:generate": "npx prisma generate",
     "prisma:generate:watch": "npx prisma generate --watch",
     "migrate:dev": "prisma migrate dev",
