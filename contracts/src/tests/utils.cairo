@@ -10,7 +10,7 @@ use snforge_std::{
 use contracts::wager::wager::StrkWager;
 use contracts::wager::types::{Mode, Category, Claim, WagerState};
 
-use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
+use contracts::escrow::interface::{IEscrowDispatcher};
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 
 pub fn OWNER() -> ContractAddress {
@@ -49,7 +49,7 @@ pub fn deploy_escrow(
     let contract = declare("Escrow").unwrap().contract_class();
 
     let mut calldata = array![];
-    strk_dispatcher.serialize(ref calldata);
+    strk_dispatcher.contract_address.serialize(ref calldata);
     wager_address.serialize(ref calldata);
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();

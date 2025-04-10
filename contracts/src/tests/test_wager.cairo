@@ -1097,8 +1097,6 @@ fn test_cancel_wager() {
         "Wager should be in Pending state after creation"
     );
 
-    let participants = wager.get_wager_participants(wager_id);
-
     // cancel a wager
     wager.cancel_wager(wager_id);
     let created_wager = wager.get_wager(wager_id);
@@ -1322,7 +1320,6 @@ fn test_submit_outcome_before_resolution_time() {
         wager, escrow, strk_dispatcher, deposit, stake, resolution_time
     );
 
-    let owner = OWNER();
     let bob = BOB();
 
     // Mint tokens for BOB
