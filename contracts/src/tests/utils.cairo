@@ -10,7 +10,7 @@ use snforge_std::{
 use contracts::wager::wager::StrkWager;
 use contracts::wager::types::{Mode, Category, Claim, WagerState};
 
-use contracts::escrow::interface::{IEscrowDispatcher, IEscrowDispatcherTrait};
+use contracts::escrow::interface::{IEscrowDispatcher};
 use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 
 pub fn OWNER() -> ContractAddress {

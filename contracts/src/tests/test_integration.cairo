@@ -1,20 +1,15 @@
 use starknet::{ContractAddress, get_block_timestamp};
-
-use contracts::wager::wager::StrkWager;
-use contracts::wager::types::{Category, Mode, Claim, WagerState};
-use contracts::wager::interface::{IStrkWagerDispatcher, IStrkWagerDispatcherTrait};
 use contracts::escrow::interface::IEscrowDispatcherTrait;
-use contracts::tests::utils::{OWNER, ADMIN, ALICE, BOB, setup, create_head_to_head_wager};
-use openzeppelin::token::erc20::interface::IERC20DispatcherTrait;
+use contracts::tests::utils::{ADMIN, setup, create_head_to_head_wager};
+use contracts::wager::interface::{IStrkWagerDispatcherTrait};
 
-use snforge_std::{
-    EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address, spy_events,
-};
+
+use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address,};
 
 #[test]
 #[should_panic(expected: ('Invalid winner address',))]
 fn test_distribute_funds_invalid_winner_address() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (wager, escrow, _) = setup();
 
     start_cheat_caller_address(escrow.contract_address, wager.contract_address);
     escrow.distribute_funds(1, 0.try_into().unwrap());
@@ -23,7 +18,7 @@ fn test_distribute_funds_invalid_winner_address() {
 #[test]
 #[should_panic(expected: ('No funds in wager',))]
 fn test_distribute_funds_no_funds() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (wager, escrow, _) = setup();
 
     start_cheat_caller_address(escrow.contract_address, wager.contract_address);
     escrow.distribute_funds(1, 1.try_into().unwrap());
@@ -57,7 +52,7 @@ fn test_distribute_funds_ok() {
 #[test]
 #[should_panic(expected: ('No funds in wager',))]
 fn test_refund_wager_no_funds_in_wager() {
-    let (wager, escrow, strk_dispatcher) = setup();
+    let (wager, escrow, _) = setup();
     let john: ContractAddress = 'john'.try_into().unwrap();
 
     start_cheat_caller_address(escrow.contract_address, wager.contract_address);
