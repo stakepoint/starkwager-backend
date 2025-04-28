@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { ApiTags } from '@nestjs/swagger';
@@ -13,5 +13,11 @@ export class AuthController {
   @Post('create-login')
   create(@Body() createAuthDto: CreateAuthDto) {
     return this.authService.createOrLogin(createAuthDto);
+  }
+
+  @Get()
+  getAuth(@Req() req) {
+    const userId = req.user.sub;
+    return this.authService.getAuthUser(userId);
   }
 }

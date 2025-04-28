@@ -43,6 +43,11 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @Get(':address')
+  findByAddress(@Param('address') address: string) {
+    return this.usersService.findOneByAddress(address);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
