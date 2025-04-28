@@ -1,6 +1,6 @@
-import { IsUrl } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class UpdateAvatarDto {
-  @IsUrl({}, { message: 'Picture must be a valid URL' })
+  @IsString()
   picture: string;
 }

@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, IsUrl, Length, Matches } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+} from 'class-validator';
 
 export class UpdateUsernameDto {
   @IsString()
@@ -9,7 +15,7 @@ export class UpdateUsernameDto {
   })
   username: string;
 
-  @IsUrl()
+  @IsString()
   @IsOptional()
   picture: string;
 }
