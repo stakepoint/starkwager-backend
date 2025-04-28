@@ -59,6 +59,10 @@ export class AuthService {
     };
   }
 
+  async getAuthUser(id: string) {
+    return this.usersService.findOne(id);
+  }
+
   // Function to validate signature
   private async isValidSignature(
     address: string,
