@@ -18,6 +18,7 @@ import { WagerClaimModule } from './wager-claim/wager-claim.module';
 import { NotificationModule } from './notification/notification.module';
 import { IndexerModule } from './indexer/indexer.module';
 import { EmailNotificationModule } from './email-notification/email-notification.module';
+import { WebsocketModule } from './websocket/websocket.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { EmailNotificationModule } from './email-notification/email-notification
     InvitationModule,
     NotificationModule,
     EmailNotificationModule,
+    WebsocketModule,
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
