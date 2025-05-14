@@ -1,6 +1,5 @@
 use starknet::ContractAddress;
 
-// TODO Add timestamp tracking
 #[derive(Drop, Serde, starknet::Store, Clone)]
 pub struct Wager {
     pub wager_id: u64,
@@ -22,6 +21,12 @@ pub enum Category {
     Sports,
     Politics,
     Entertainment,
+    Crypto,
+    Stocks,
+    Games,
+    Technology,
+    Health,
+    Others,
 }
 
 #[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]

@@ -110,9 +110,7 @@ pub mod StrkWager {
     pub struct WagerResolvedEvent {
         pub wager_id: u64,
         pub winner: ContractAddress,
-        //     pub final_outcome: Claim, //TODO
-    // pub consensus_reached: bool,
-    // pub resolved_at: u64,
+        pub resolved_at: u64,
     }
 
     const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE"); // Unique identifier for the role
@@ -317,7 +315,7 @@ pub mod StrkWager {
 
             self.wagers.entry(wager_id).write(wager);
 
-            self.emit(WagerResolvedEvent { wager_id, winner });
+            self.emit(WagerResolvedEvent { wager_id, winner, resolved_at: get_block_timestamp() });
         }
 
         fn cancel_wager(ref self: ContractState, wager_id: u64) {
@@ -488,7 +486,12 @@ pub mod StrkWager {
                     self._escrow_dispatcher().distribute_funds(wager_id, winner);
 
                     // Emit an event for resolution
-                    self.emit(WagerResolvedEvent { wager_id, winner });
+                    self
+                        .emit(
+                            WagerResolvedEvent {
+                                wager_id, winner, resolved_at: get_block_timestamp()
+                            }
+                        );
                 },
                 Mode::Group => { assert(false, 'not_group_allow'); },
             }
