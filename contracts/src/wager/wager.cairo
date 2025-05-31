@@ -50,6 +50,10 @@ pub mod StrkWager {
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
+        // Reputation system storage
+        user_stats: Map<ContractAddress, UserStats>,
+        user_achievements: Map<ContractAddress, Map<AchievementType, Achievement>>,
+        user_achievement_count: Map<ContractAddress, u64>,
     }
 
     #[event]
