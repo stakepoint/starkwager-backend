@@ -132,4 +132,3 @@ impl Felt252TryIntoAchievementType of TryInto<felt252, AchievementType> {
     }
 }
 
-

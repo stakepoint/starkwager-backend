@@ -12,7 +12,9 @@ pub mod StrkWager {
     use starknet::get_block_timestamp;
 
     use contracts::wager::interface::IStrkWager;
-    use contracts::wager::types::{Wager, Category, Mode, Claim, WagerState};
+    use contracts::wager::types::{
+        Wager, Category, Mode, Claim, WagerState, AchievementType, Achievement, UserStats
+    };
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::access::accesscontrol::{AccessControlComponent};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
