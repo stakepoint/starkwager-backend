@@ -12,7 +12,9 @@ pub mod StrkWager {
     use starknet::get_block_timestamp;
 
     use contracts::wager::interface::IStrkWager;
-    use contracts::wager::types::{Wager, Category, Mode, Claim, WagerState};
+    use contracts::wager::types::{
+        Wager, Category, Mode, Claim, WagerState, AchievementType, Achievement, UserStats
+    };
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::access::accesscontrol::{AccessControlComponent};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -50,6 +52,10 @@ pub mod StrkWager {
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
+        // Reputation system storage
+        user_stats: Map<ContractAddress, UserStats>,
+        user_achievements: Map<ContractAddress, Map<AchievementType, Achievement>>,
+        user_achievement_count: Map<ContractAddress, u64>,
     }
 
     #[event]
