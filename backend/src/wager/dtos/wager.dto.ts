@@ -15,6 +15,12 @@ enum WagerStatus {
   ACTIVE = 'active',
   COMPLETED = 'completed',
 }
+
+export enum TxStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  FAILED = 'failed',
+}
 export default WagerStatus;
 
 export class CreateWagerDto {
@@ -44,6 +50,13 @@ export class CreateWagerDto {
   @IsString()
   @IsOptional()
   createdById: string;
+
+  @IsString()
+  txHash: string;
+
+  @IsString()
+  @IsEnum(TxStatus)
+  txStatus: string;
 
   @IsOptional()
   @IsString({ each: true })

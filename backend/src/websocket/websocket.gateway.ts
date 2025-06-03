@@ -41,7 +41,9 @@ export class WebsocketGateway
 
   @SubscribeMessage('message')
   handleMessage(client: Socket, payload: any): void {
-    this.logger.log(`Received message from ${client.id}: ${JSON.stringify(payload)}`);
+    this.logger.log(
+      `Received message from ${client.id}: ${JSON.stringify(payload)}`,
+    );
     // Broadcast the message to all connected clients except the sender
     client.broadcast.emit('message', {
       senderId: client.id,

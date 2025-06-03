@@ -76,32 +76,38 @@ export class WagerService {
   async bulkCreateWagers(payload: CreateWagerDto[]) {
     return this.prisma.$transaction(async (tx) => {
       const createdWagers = [];
-  
+
       for (const wager of payload) {
         // Check if a wager with the same name already exists
         const existingWager = await tx.wager.findFirst({
           where: { name: wager.name },
         });
-  
+
         if (existingWager) {
-          throw new BadRequestException(`Wager with name "${wager.name}" already exists.`);
+          throw new BadRequestException(
+            `Wager with name "${wager.name}" already exists.`,
+          );
         }
-  
+
         // Create the wager
         const newWager = await tx.wager.create({
           data: {
             ...wager,
             hashtags: wager.hashtags
-              ? { connectOrCreate: wager.hashtags.map((name) => ({ where: { name }, create: { name } })) }
+              ? {
+                  connectOrCreate: wager.hashtags.map((name) => ({
+                    where: { name },
+                    create: { name },
+                  })),
+                }
               : undefined,
           },
         });
-  
+
         createdWagers.push(newWager);
       }
-  
+
       return createdWagers;
     });
   }
-  
 }

@@ -52,10 +52,10 @@ describe('WebsocketService', () => {
     it('should broadcast to all connected clients', () => {
       const event = 'test-event';
       const payload = { message: 'test message' };
-      
+
       service.handleConnection(mockSocket);
       service.broadcastToAll(event, payload);
-      
+
       expect(mockSocket.emit).toHaveBeenCalledWith(event, payload);
     });
   });
@@ -65,10 +65,10 @@ describe('WebsocketService', () => {
       const room = 'test-room';
       const event = 'test-event';
       const payload = { message: 'test message' };
-      
+
       service.handleConnection(mockSocket);
       service.broadcastToRoom(room, event, payload);
-      
+
       expect(mockSocket.emit).toHaveBeenCalledWith(event, payload);
     });
   });

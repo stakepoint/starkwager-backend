@@ -36,6 +36,9 @@ model Wager {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  txHash       String?      @map("tx_hash")      // NEW: Transaction hash
+  txStatus     String?      @map("tx_status")    // NEW: "pending", "confirmed", "failed"
+
   // Relationships
   category    Category     @relation(fields: [categoryId], references: [id])
   createdBy   User         @relation(fields: [createdById], references: [id])
