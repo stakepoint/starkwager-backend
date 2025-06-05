@@ -9,4 +9,5 @@ mod tests {
     mod test_wager;
     mod utils;
     mod test_integration;
+    mod test_reputation;
 }

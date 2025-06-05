@@ -1,5 +1,7 @@
 use starknet::ContractAddress;
-use contracts::wager::types::{Wager, Category, Mode, Claim};
+use contracts::wager::types::{
+    Wager, Category, Mode, Claim, AchievementType, Achievement, UserStats
+};
 
 #[starknet::interface]
 pub trait IStrkWager<TContractState> {
@@ -30,4 +32,11 @@ pub trait IStrkWager<TContractState> {
     fn is_wager_participant(self: @TContractState, wager_id: u64, caller: ContractAddress) -> bool;
     fn has_outcome_submitted(self: @TContractState, wager_id: u64, caller: ContractAddress) -> bool;
     fn submit_outcome(ref self: TContractState, wager_id: u64, vote: bool);
+
+    // Achievement
+    fn get_user_stats(self: @TContractState, user: ContractAddress) -> UserStats;
+    fn get_user_achievements(self: @TContractState, user: ContractAddress) -> Span<Achievement>;
+    fn has_achievement(
+        self: @TContractState, user: ContractAddress, achievement_type: AchievementType
+    ) -> bool;
 }
