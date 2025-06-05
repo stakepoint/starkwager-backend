@@ -36,7 +36,7 @@ pub enum Mode {
     Group,
 }
 
-#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default)]
+#[derive(Drop, Copy, Serde, PartialEq, starknet::Store, Default, Debug)]
 pub enum Claim {
     #[default]
     No,
@@ -53,9 +53,9 @@ pub enum WagerState {
     Cancelled
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, starknet::Store,)]
 pub struct Achievement {
-    pub achievement_type: AchievementType,
+    pub achievement_type: felt252,
     pub earned_at: u64,
     pub wager_id: u64,
 }
@@ -74,7 +74,7 @@ pub enum AchievementType {
     QuickWinner, // Won within first 24 hours of wager creation
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, starknet::Store,)]
 pub struct UserStats {
     pub total_wagers_created: u64,
     pub total_wagers_joined: u64,

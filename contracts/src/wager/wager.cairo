@@ -54,7 +54,7 @@ pub mod StrkWager {
         src5: SRC5Component::Storage,
         // Reputation system storage
         user_stats: Map<ContractAddress, UserStats>,
-        user_achievements: Map<ContractAddress, Map<AchievementType, Achievement>>,
+        user_achievements: Map<ContractAddress, Map<felt252, Achievement>>,
         user_achievement_count: Map<ContractAddress, u64>,
     }
 
@@ -71,6 +71,8 @@ pub mod StrkWager {
         #[flat]
         SRC5Event: SRC5Component::Event,
         WagerResolvedEvent: WagerResolvedEvent,
+        StatsUpdated: StatsUpdatedEvent,
+        AchievementEarned: AchievementEarnedEvent,
     }
 
 
@@ -117,6 +119,20 @@ pub mod StrkWager {
         pub wager_id: u64,
         pub winner: ContractAddress,
         pub resolved_at: u64,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct StatsUpdatedEvent {
+        pub user: ContractAddress,
+        pub new_stats: UserStats,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct AchievementEarnedEvent {
+        pub user: ContractAddress,
+        pub achievement_type: AchievementType,
+        pub wager_id: u64,
+        pub earned_at: u64,
     }
 
     const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE"); // Unique identifier for the role
@@ -208,6 +224,8 @@ pub mod StrkWager {
 
             self._fund_wager(wager_id, stake);
 
+            self._update_user_stats_on_create(creator, stake, wager_id);
+
             self
                 .emit(
                     WagerCreatedEvent {
@@ -258,13 +276,15 @@ pub mod StrkWager {
 
             let in_app_balance = self.get_balance(caller);
             if in_app_balance < wager.stake {
-                self._top_up_in_app_wallet(wager.stake, in_app_balance);
+                self._top_up_in_app_wallet(wager.stake.clone(), in_app_balance);
             }
 
-            self._fund_wager(wager_id, wager.stake);
+            self._fund_wager(wager_id, wager.stake.clone());
 
             wager.state = WagerState::Active;
-            self.wagers.entry(wager_id).write(wager);
+            self.wagers.entry(wager_id).write(wager.clone());
+
+            self._update_user_stats_on_join(caller, wager.stake.clone(), wager_id);
 
             self.emit(WagerJoinedEvent { wager_id, participant: caller });
         }
@@ -319,7 +339,24 @@ pub mod StrkWager {
             wager.state = WagerState::Resolved;
             wager.winner = winner;
 
-            self.wagers.entry(wager_id).write(wager);
+            self.wagers.entry(wager_id).write(wager.clone());
+
+            // TODO: check that everything is correct
+            self._escrow_dispatcher().distribute_funds(wager_id, winner);
+
+            let total_stake: u256 = self.wager_participants_count.entry(wager_id).read().into()
+                * wager.stake;
+            self._update_user_stats_on_win(winner, total_stake, wager_id);
+
+            let participants = self.get_wager_participants(wager_id);
+            let mut i = 0;
+            while i < participants.len() {
+                let participant = *participants.at(i);
+                if participant != winner {
+                    self._update_user_stats_on_loss(participant);
+                }
+                i += 1;
+            };
 
             self.emit(WagerResolvedEvent { wager_id, winner, resolved_at: get_block_timestamp() });
         }
@@ -398,6 +435,59 @@ pub mod StrkWager {
                     Option::None => {}
                 }
             }
+        }
+
+        fn get_user_stats(self: @ContractState, user: ContractAddress) -> UserStats {
+            self.user_stats.entry(user).read()
+        }
+
+        fn get_user_achievements(self: @ContractState, user: ContractAddress) -> Span<Achievement> {
+            let achievement_count = self.user_achievement_count.entry(user).read();
+            let mut achievements = array![];
+
+            // Check each achievement type
+            let achievement_types = array![
+                AchievementType::FirstWager,
+                AchievementType::FirstWin,
+                AchievementType::FirstJoin,
+                AchievementType::WinStreak5,
+                AchievementType::WinStreak10,
+                AchievementType::AccuratePrediction,
+                AchievementType::HighStaker,
+                AchievementType::FrequentPlayer,
+                AchievementType::WealthyWinner,
+                AchievementType::QuickWinner,
+            ];
+
+            let mut i = 0;
+            while i < achievement_types.len() {
+                let achievement_type = *achievement_types.at(i);
+                let achievement = self
+                    .user_achievements
+                    .entry(user)
+                    .entry(achievement_type.into())
+                    .read();
+
+                // Check if achievement exists
+                if achievement.achievement_type != 0 {
+                    achievements.append(achievement);
+                }
+
+                i += 1;
+            };
+
+            achievements.span()
+        }
+
+        fn has_achievement(
+            self: @ContractState, user: ContractAddress, achievement_type: AchievementType
+        ) -> bool {
+            let achievement = self
+                .user_achievements
+                .entry(user)
+                .entry(achievement_type.into())
+                .read();
+            achievement.achievement_type != 0
         }
     }
 
@@ -491,7 +581,29 @@ pub mod StrkWager {
                     // Distribute funds through escrow
                     self._escrow_dispatcher().distribute_funds(wager_id, winner);
 
-                    // Emit an event for resolution
+                    // Calculate total stake from participants
+                    let total_stake: u256 = self
+                        .wager_participants_count
+                        .entry(wager_id)
+                        .read()
+                        .into()
+                        * wager.stake;
+
+                    // Update winner stats
+                    self._update_user_stats_on_win(winner, total_stake, wager_id);
+
+                    // Update loser stats
+                    let participants = self.get_wager_participants(wager_id);
+                    let mut i = 0;
+                    while i < participants.len() {
+                        let participant = *participants.at(i);
+                        if participant != winner {
+                            self._update_user_stats_on_loss(participant);
+                        }
+                        i += 1;
+                    };
+
+                    // Emit resolution event
                     self
                         .emit(
                             WagerResolvedEvent {
@@ -564,6 +676,189 @@ pub mod StrkWager {
             let wager = self.get_wager(wager_id);
             let current_time = get_block_timestamp();
             current_time >= wager.resolution_time
+        }
+
+        fn _update_user_stats_on_create(
+            ref self: ContractState, creator: ContractAddress, stake: u256, wager_id: u64
+        ) {
+            let mut stats = self.user_stats.entry(creator).read();
+            stats.total_wagers_created += 1;
+            stats.total_volume_wagered += stake;
+
+            self.user_stats.entry(creator).write(stats);
+            self.emit(StatsUpdatedEvent { user: creator, new_stats: stats });
+
+            // Check for achievements
+            self._check_achievements_on_create(creator, stake, wager_id);
+        }
+
+        fn _update_user_stats_on_join(
+            ref self: ContractState, participant: ContractAddress, stake: u256, wager_id: u64
+        ) {
+            let mut stats = self.user_stats.entry(participant).read();
+            stats.total_wagers_joined += 1;
+            stats.total_volume_wagered += stake;
+
+            self.user_stats.entry(participant).write(stats);
+            self.emit(StatsUpdatedEvent { user: participant, new_stats: stats });
+
+            // Check for achievements
+            self._check_achievements_on_join(participant, stake, wager_id);
+        }
+
+        fn _update_user_stats_on_win(
+            ref self: ContractState, winner: ContractAddress, winnings: u256, wager_id: u64
+        ) {
+            let mut stats = self.user_stats.entry(winner).read();
+            stats.total_wins += 1;
+            stats.total_winnings += winnings;
+            stats.current_win_streak += 1;
+
+            // Update best win streak if current is better
+            if stats.current_win_streak > stats.best_win_streak {
+                stats.best_win_streak = stats.current_win_streak;
+            }
+
+            // Calculate accuracy percentage
+            let total_completed = stats.total_wins + stats.total_losses;
+            if total_completed > 0 {
+                stats.accuracy_percentage = (stats.total_wins * 100) / total_completed;
+            }
+
+            self.user_stats.entry(winner).write(stats);
+            self.emit(StatsUpdatedEvent { user: winner, new_stats: stats });
+
+            // Check for achievements
+            self._check_achievements_on_win(winner, winnings, wager_id);
+        }
+
+        fn _update_user_stats_on_loss(ref self: ContractState, loser: ContractAddress) {
+            let mut stats = self.user_stats.entry(loser).read();
+            stats.total_losses += 1;
+            stats.current_win_streak = 0; // Reset win streak on loss
+
+            // Recalculate accuracy
+            let total_completed = stats.total_wins + stats.total_losses;
+            if total_completed > 0 {
+                stats.accuracy_percentage = (stats.total_wins * 100) / total_completed;
+            }
+
+            self.user_stats.entry(loser).write(stats);
+            self.emit(StatsUpdatedEvent { user: loser, new_stats: stats });
+        }
+
+        fn _check_achievements_on_create(
+            ref self: ContractState, creator: ContractAddress, stake: u256, wager_id: u64
+        ) {
+            let stats = self.user_stats.entry(creator).read();
+
+            // First Wager achievement
+            if stats.total_wagers_created == 1 {
+                self._award_achievement(creator, AchievementType::FirstWager, wager_id);
+            }
+
+            // High Staker achievement (1000+ STRK)
+            if stake >= 1000 && !self.has_achievement(creator, AchievementType::HighStaker) {
+                self._award_achievement(creator, AchievementType::HighStaker, wager_id);
+            }
+        }
+
+        fn _check_achievements_on_join(
+            ref self: ContractState, participant: ContractAddress, stake: u256, wager_id: u64
+        ) {
+            let stats = self.user_stats.entry(participant).read();
+
+            // First Join achievement
+            if stats.total_wagers_joined == 1 {
+                self._award_achievement(participant, AchievementType::FirstJoin, wager_id);
+            }
+
+            // Frequent Player achievement (50+ total wagers)
+            let total_participation = stats.total_wagers_created + stats.total_wagers_joined;
+            if total_participation >= 50
+                && !self.has_achievement(participant, AchievementType::FrequentPlayer) {
+                self._award_achievement(participant, AchievementType::FrequentPlayer, wager_id);
+            }
+
+            // High Staker achievement
+            if stake >= 1000 && !self.has_achievement(participant, AchievementType::HighStaker) {
+                self._award_achievement(participant, AchievementType::HighStaker, wager_id);
+            }
+        }
+
+        fn _check_achievements_on_win(
+            ref self: ContractState, winner: ContractAddress, winnings: u256, wager_id: u64
+        ) {
+            let stats = self.user_stats.entry(winner).read();
+
+            // First Win achievement
+            if stats.total_wins == 1 {
+                self._award_achievement(winner, AchievementType::FirstWin, wager_id);
+            }
+
+            // Win Streak achievements
+            if stats.current_win_streak == 5
+                && !self.has_achievement(winner, AchievementType::WinStreak5) {
+                self._award_achievement(winner, AchievementType::WinStreak5, wager_id);
+            }
+
+            if stats.current_win_streak == 10
+                && !self.has_achievement(winner, AchievementType::WinStreak10) {
+                self._award_achievement(winner, AchievementType::WinStreak10, wager_id);
+            }
+
+            // Accurate Prediction achievement (80%+ accuracy over 10+ wagers)
+            let total_completed = stats.total_wins + stats.total_losses;
+            if total_completed > 9
+                && stats.accuracy_percentage >= 80
+                && !self.has_achievement(winner, AchievementType::AccuratePrediction) {
+                println!("e enter: 1",);
+                self._award_achievement(winner, AchievementType::AccuratePrediction, wager_id);
+            }
+
+            // Wealthy Winner achievement (10,000+ STRK total winnings)
+            if stats.total_winnings >= 10000
+                && !self.has_achievement(winner, AchievementType::WealthyWinner) {
+                self._award_achievement(winner, AchievementType::WealthyWinner, wager_id);
+            }
+
+            // Quick Winner achievement (won within 24 hours)
+            let wager = self.get_wager(wager_id);
+            let current_time = get_block_timestamp();
+            if current_time
+                - wager.created_at <= 86400
+                    && // 24 hours in seconds
+                    !self
+                        .has_achievement(winner, AchievementType::QuickWinner) {
+                self._award_achievement(winner, AchievementType::QuickWinner, wager_id);
+            }
+        }
+
+        fn _award_achievement(
+            ref self: ContractState,
+            user: ContractAddress,
+            achievement_type: AchievementType,
+            wager_id: u64
+        ) {
+            let current_time = get_block_timestamp();
+
+            let achievement = Achievement {
+                achievement_type: achievement_type.into(), earned_at: current_time, wager_id,
+            };
+
+            self.user_achievements.entry(user).entry(achievement_type.into()).write(achievement);
+
+            // Increment achievement count
+            let current_count = self.user_achievement_count.entry(user).read();
+            self.user_achievement_count.entry(user).write(current_count + 1);
+
+            // Emit achievement event
+            self
+                .emit(
+                    AchievementEarnedEvent {
+                        user, achievement_type, wager_id, earned_at: current_time
+                    }
+                );
         }
     }
 }
