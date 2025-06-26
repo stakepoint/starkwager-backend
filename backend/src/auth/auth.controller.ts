@@ -20,4 +20,9 @@ export class AuthController {
     const userId = req.user.sub;
     return this.authService.getAuthUser(userId);
   }
+
+  @Post('refresh-token')
+  async refresh(@Body('refreshToken') token: string) {
+    return this.authService.refreshTokens(token);
+  }
 }

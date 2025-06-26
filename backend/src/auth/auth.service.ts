@@ -83,6 +83,31 @@ export class AuthService {
       return false;
     }
   }
+  async refreshTokens(refreshToken: string) {
+    try {
+      // Verify and decode the refresh token
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.appConfig.refreshTokenSecret,
+      });
+
+      // Check if user still exists
+      const user = await this.usersService.findOneByAddress(payload.address);
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      // Optionally: verify token against DB or allowlist
+
+      // Re-issue tokens
+      const tokens = await this.signJwt(user);
+      return {
+        message: 'Token refreshed successfully',
+        tokens,
+      };
+    } catch (err) {
+      throw new BadRequestException('Invalid or expired refresh token');
+    }
+  }
 
   private async signJwt(payload: User) {
     const { address } = payload;
