@@ -5,3 +5,7 @@ export class UserTokenDto {
   sub: string;
   role: Role;
 }
+
+export class RefreshTokenDto {
+  refreshToken: string;
+}
